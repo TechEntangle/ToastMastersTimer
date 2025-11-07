@@ -1,6 +1,10 @@
 # ToastMasters Timer
 
+[Live Demo → ToastMasters Timer](https://techentangle.github.io/ToastMastersTimer/)
+
 A single-page web application that helps Toastmasters meeting timers track speeches, provide visual cues, and maintain a running log of performances.
+
+👉 **Live Demo:** https://techentangle.github.io/ToastMastersTimer/
 
 ## Features
 
@@ -10,13 +14,14 @@ A single-page web application that helps Toastmasters meeting timers track speec
 - **Status Progression** – Automatic evaluation of each talk as Under Time, Within Time, or Over Time, with colored pill indicators and matching icons in the log.
 - **Accessible Keyboard Shortcut** – Spacebar toggles Start/Pause when focus is not on an input field.
 - **Embedded Cue Sound** – Built-in audio ding (with a Test Sound button) so no external file is needed.
+- **Privacy by Design** – Everything runs locally in your browser; speaker names, topics, and timing data live only in temporary memory, are never sent to a server, and vanish as soon as you refresh or close the tab.
 - **Log & Export** – Each ended talk stores the speaker, topic, total time, and status; export the log as a CSV file for easy sharing or archival.
 - **Modern UI Toggle** – Switch between the original look and a Bootstrap-inspired modern layout via the UI toggle bar.
 - **Footer Credit** – A subtle footer credit that links to Tushar Vartak’s LinkedIn profile.
 
 ## Usage
 
-1. Open `index.html` locally or host it via GitHub Pages (it’s named lowercase to be picked up automatically).
+1. Open the [hosted timer](https://techentangle.github.io/ToastMastersTimer/) or load `index.html` locally (it’s lowercase to work with GitHub Pages).
 2. Enter optional speaker and topic information; the display updates live.
 3. Pick a preset (or choose Custom) to control green/yellow/red thresholds.
 4. Press **Start** (or hit Spacebar) to begin timing. The background changes color as thresholds are crossed.
