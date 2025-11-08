@@ -4,156 +4,85 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ToastMasters Timer</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" crossorigin="anonymous">
   <style>
     :root {
       color-scheme: light;
-      --timer-bg: rgba(255, 255, 255, 0.85);
-      --timer-color: #111;
+      --timer-bg: #ffffff;
+      --timer-color: #111111;
     }
 
     body {
-      margin: 0;
-      padding: 18px;
-      font-family: Arial, Helvetica, sans-serif;
-      color: #111;
-      background: #fff;
-      text-align: center;
-    }
-
-    #ui-toggle-bar {
-      max-width: 1080px;
-      margin: 0 auto 18px;
-      display: flex;
-      justify-content: flex-end;
-      align-items: center;
-      gap: 12px;
-    }
-
-    #toggleUiBtn {
-      padding: 8px 14px;
-      font-size: 0.95rem;
-      border-radius: 6px;
-      border: 1px solid #0d6efd;
-      background: #0d6efd;
-      color: #fff;
-      cursor: pointer;
-      transition: background 0.2s ease, transform 0.15s ease;
-    }
-
-    #toggleUiBtn:hover {
-      background: #0b5ed7;
-      transform: translateY(-1px);
-    }
-
-    #toggleUiBtn:active {
-      transform: translateY(0);
-    }
-
-    #ui-version-label {
-      font-weight: 600;
-      font-size: 0.95rem;
+      font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+      background: #f5f7fb;
+      color: #212529;
     }
 
     #app {
-      max-width: 1080px;
-      margin: 0 auto;
+      max-width: 1100px;
     }
 
-    h1 {
-      margin: 12px 0;
-      font-size: clamp(1.8rem, 4vw, 2.8rem);
+    header .badge {
+      font-size: 0.85rem;
     }
 
-    #meta {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 12px;
-      margin: 12px auto 18px;
+    #display-bar .info-card {
+      background: #ffffff;
+      border-radius: 1rem;
+      padding: 1.25rem 1.5rem;
+      box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+      height: 100%;
     }
 
-    .field {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      justify-content: center;
-    }
-
-    .field label {
+    #display-bar .info-label {
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.75rem;
+      color: #6c757d;
+      margin-bottom: 0.35rem;
       font-weight: 600;
     }
 
-    .field input,
-    select,
-    button {
-      font-size: 1rem;
-      padding: 8px 10px;
-    }
-
-    #display-bar {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 14px;
-      margin: 0 auto 18px;
-      max-width: 980px;
-    }
-
-    #who,
-    #topic {
-      background: rgba(255, 255, 255, 0.8);
-      border-radius: 10px;
-      border: 2px solid #eee;
-      padding: 12px 14px;
-      font-size: 1.1rem;
+    #display-bar .info-value {
+      font-size: 1.35rem;
       font-weight: 600;
+      color: #1f2937;
+    }
+
+    .timer-shell {
+      border: 0;
+      border-radius: 1.5rem;
+      background: #ffffff;
+      box-shadow: 0 26px 48px rgba(15, 23, 42, 0.15);
+    }
+
+    .timer-shell .card-body {
+      padding: 2.75rem 1.5rem;
     }
 
     #timer-display {
-      margin: 16px auto 24px;
-      max-width: 520px;
-      border-radius: 16px;
-      padding: 24px;
-      font-size: clamp(4rem, 14vw, 8rem);
-      font-weight: 800;
-      line-height: 1;
+      margin: 0 auto;
+      font-size: clamp(3.5rem, 14vw, 7rem);
+      font-weight: 700;
+      letter-spacing: 1px;
+      padding: 2.4rem 1.5rem;
+      border-radius: 1.25rem;
       background: var(--timer-bg);
       color: var(--timer-color);
-      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .controls {
-      margin: 0 auto 22px;
-      max-width: 980px;
-    }
-
-    .time-inputs {
-      margin: 12px auto;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .time-inputs input {
-      width: 3.3em;
-      text-align: right;
+      box-shadow: 0 18px 42px rgba(15, 23, 42, 0.18);
     }
 
     #grace-indicator {
       display: none;
-      margin: 0 auto 16px;
-      padding: 8px 18px;
+      margin: 1.5rem auto 0;
+      padding: 0.65rem 1.5rem;
       border-radius: 999px;
-      background: rgba(255, 255, 255, 0.95);
+      background: rgba(255, 255, 255, 0.96);
       color: #7a1111;
       font-weight: 700;
       letter-spacing: 0.3px;
-      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6), 0 10px 24px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6), 0 18px 32px rgba(15, 23, 42, 0.18);
       align-items: center;
-      justify-content: center;
       gap: 10px;
     }
 
@@ -171,36 +100,34 @@
       to { opacity: 0.55; transform: scale(0.97); }
     }
 
+    #running-hint {
+      display: none;
+      margin: 0.75rem auto 0;
+      padding: 0.6rem 1.4rem;
+      background: rgba(33, 37, 41, 0.9);
+      color: #fff;
+      font-weight: 600;
+      border-radius: 999px;
+      max-width: 440px;
+      text-align: center;
+      letter-spacing: 0.2px;
+    }
+
+    .time-input-group input {
+      width: 4.2rem;
+      text-align: right;
+    }
+
+    .time-input-group .separator {
+      font-weight: 600;
+      color: #495057;
+    }
+
     .button-bar {
       display: flex;
       flex-wrap: wrap;
-      gap: 14px;
-      justify-content: space-evenly;
-      align-items: center;
-      margin: 14px 0 8px;
-      width: 100%;
-    }
-
-    #hint {
-      margin-top: 10px;
-      font-size: 0.95rem;
-      opacity: 0.8;
-    }
-
-    hr.section-divider {
-      margin: 24px auto;
-      max-width: 980px;
-    }
-
-    #log-section {
-      max-width: 980px;
-      margin: 0 auto 40px;
-      text-align: left;
-    }
-
-    #log-section h2 {
-      text-align: center;
-      margin-bottom: 14px;
+      gap: 1rem;
+      justify-content: center;
     }
 
     #log-section table {
@@ -210,21 +137,21 @@
 
     #log-section th,
     #log-section td {
-      border-bottom: 1px solid #e5e5e5;
-      padding: 8px;
+      border-bottom: 1px solid #eceff4;
+      padding: 0.75rem;
       text-align: left;
     }
 
-    .credits {
-      margin: 24px auto 0;
-      text-align: center;
-      font-size: 0.95rem;
-      opacity: 0.8;
+    #log-section th {
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-size: 0.78rem;
+      color: #6c757d;
+      background: #f1f4fb;
     }
 
-    .credits a {
-      color: inherit;
-      text-decoration: underline;
+    #log-section tbody tr:last-child td {
+      border-bottom: 0;
     }
 
     .within-cell {
@@ -257,9 +184,8 @@
       font-size: 1.1rem;
     }
 
-
     .btn-icon {
-      margin-right: 6px;
+      margin-right: 0.35rem;
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -271,186 +197,188 @@
       align-items: center;
     }
 
-    body.ui-v2 {
-      font-family: "Inter", "Segoe UI", sans-serif;
-      color: #212529;
-      background: #f8f9fb;
-      text-align: left;
-      --timer-bg: #0d6efd;
-      --timer-color: #fff;
-    }
-
-    body.ui-v2 #ui-toggle-bar {
-      background: linear-gradient(135deg, #0d6efd, #6610f2);
-      color: #fff;
-      padding: 14px 24px;
-      border-radius: 0 0 18px 18px;
-      box-shadow: 0 12px 24px rgba(13, 110, 253, 0.25);
-    }
-
-    body.ui-v2 #toggleUiBtn {
-      background: rgba(255, 255, 255, 0.25);
-      border: 1px solid rgba(255, 255, 255, 0.45);
-      color: #fff;
-    }
-
-    body.ui-v2 h1 {
+    .credits {
+      margin: 3rem auto 0;
       text-align: center;
-      color: #0d1b3d;
-      margin-bottom: 24px;
-      font-weight: 700;
+      font-size: 0.95rem;
+      color: #6c757d;
     }
 
-    body.ui-v2 #meta,
-    body.ui-v2 .controls,
-    body.ui-v2 #log-section {
-      background: #fff;
-      border-radius: 18px;
-      padding: 24px;
-      box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+    .credits a {
+      color: inherit;
+      text-decoration: underline;
     }
 
-    body.ui-v2 #display-bar {
-      display: flex;
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    body.ui-v2 #display-bar > div {
-      flex: 1 1 0;
-      background: #fff;
-      border-radius: 16px;
-      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
-      border: 0;
-      text-align: left;
-      padding: 20px;
-    }
-
-    body.ui-v2 #timer-display {
-      margin-top: 18px;
-      margin-bottom: 32px;
-      border-radius: 24px;
-      box-shadow: 0 18px 48px rgba(13, 110, 253, 0.28);
-    }
-
-    body.ui-v2 .button-bar.primary-actions {
-      justify-content: space-between;
-      gap: 18px;
-    }
-
-    @media (max-width: 700px) {
-      body { padding: 14px; }
-      #ui-toggle-bar { flex-wrap: wrap; justify-content: center; }
-      body.ui-v2 #display-bar { flex-direction: column; }
-      #timer-display { font-size: clamp(3.5rem, 24vw, 7rem); }
+    @media (max-width: 576px) {
+      .time-input-group input {
+        width: 3.4rem;
+      }
+      #timer-display {
+        font-size: clamp(3.25rem, 22vw, 6rem);
+        padding: 2rem 1rem;
+      }
     }
   </style>
 </head>
 <body>
-  <div id="ui-toggle-bar">
-    <span id="ui-version-label">UI v1 – Classic</span>
-    <button id="toggleUiBtn" type="button">Switch to Modern UI</button>
+  <div id="app" class="container-lg py-4">
+    <header class="mb-4">
+      <div class="row align-items-center g-3">
+        <div class="col-md-8 text-center text-md-start">
+          <h1 class="fw-semibold mb-1">ToastMasters Timer</h1>
+          <p class="text-muted mb-0">Track speeches, keep pace, and celebrate great delivery.</p>
+        </div>
+        <div class="col-md-4 text-center text-md-end">
+          <span class="badge bg-primary-subtle text-primary-emphasis px-3 py-2 rounded-pill fw-semibold">30s grace window enabled</span>
+        </div>
+      </div>
+    </header>
+
+    <div id="display-bar" class="row g-3 mb-4">
+      <div class="col-md-6">
+        <div class="info-card h-100">
+          <div class="info-label">Speaker</div>
+          <div class="info-value"><span id="speakerName">—</span></div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="info-card h-100">
+          <div class="info-label">Topic</div>
+          <div class="info-value"><span id="topicName">—</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card timer-shell border-0 mb-4">
+      <div class="card-body text-center">
+        <div id="timer-display">00:00</div>
+        <div id="grace-indicator" role="status" aria-live="polite" aria-hidden="true">
+          <span class="grace-icon" aria-hidden="true">🕒</span>
+          <span class="grace-text">30s grace period in effect</span>
+        </div>
+        <div id="running-hint" aria-live="polite"></div>
+      </div>
+    </div>
+
+    <div id="meta" class="card shadow-sm mb-4">
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label for="speakerInput" class="form-label">Speaker</label>
+            <input id="speakerInput" type="text" class="form-control" placeholder="Name" />
+          </div>
+          <div class="col-md-6">
+            <label for="topicInput" class="form-label">Topic</label>
+            <input id="topicInput" type="text" class="form-control" placeholder="Table Topic / Speech Title" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mb-4 controls">
+      <div class="card-body">
+        <div class="row g-3 align-items-end">
+          <div class="col-lg-3 col-md-4">
+            <label for="preset" class="form-label">Timing preset</label>
+            <select id="preset" class="form-select">
+              <option value="TT">Table Topics (1–2 min)</option>
+              <option value="EV">Evaluation (2–3 min)</option>
+              <option value="SP">Speech (5–7 min)</option>
+              <option value="Custom">Custom/Other</option>
+            </select>
+          </div>
+          <div class="col-lg-9 col-md-8">
+            <label class="form-label d-block">Custom thresholds (mm:ss)</label>
+            <div class="row g-3">
+              <div class="col-sm-4">
+                <label class="form-label small text-muted" for="green-min">Green</label>
+                <div class="d-flex align-items-center gap-2 time-input-group">
+                  <input id="green-min" type="number" min="0" value="1" class="form-control text-end" />
+                  <span class="separator">:</span>
+                  <input id="green-sec" type="number" min="0" max="59" value="0" class="form-control text-end" />
+                </div>
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label small text-muted" for="yellow-min">Yellow</label>
+                <div class="d-flex align-items-center gap-2 time-input-group">
+                  <input id="yellow-min" type="number" min="0" value="1" class="form-control text-end" />
+                  <span class="separator">:</span>
+                  <input id="yellow-sec" type="number" min="0" max="59" value="30" class="form-control text-end" />
+                </div>
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label small text-muted" for="red-min">Red</label>
+                <div class="d-flex align-items-center gap-2 time-input-group">
+                  <input id="red-min" type="number" min="0" value="2" class="form-control text-end" />
+                  <span class="separator">:</span>
+                  <input id="red-sec" type="number" min="0" max="59" value="0" class="form-control text-end" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="button-bar primary-actions mt-4 pt-3 border-top">
+          <button id="startPauseBtn" type="button" class="btn btn-success btn-lg">
+            <span class="btn-icon" aria-hidden="true">▶️</span>
+            <span class="btn-label">Start</span>
+          </button>
+          <button id="resetBtn" type="button" class="btn btn-outline-secondary">
+            <span class="btn-icon" aria-hidden="true">⟲</span>
+            <span class="btn-label">Reset</span>
+          </button>
+          <button id="endTalkBtn" type="button" class="btn btn-warning text-white">
+            <span class="btn-icon" aria-hidden="true">🛑</span>
+            <span class="btn-label">End Talk</span>
+          </button>
+          <button id="downloadCsvBtn" type="button" class="btn btn-outline-info">
+            <span class="btn-icon" aria-hidden="true">⬇️</span>
+            <span class="btn-label">Download CSV</span>
+          </button>
+        </div>
+
+        <div class="button-bar secondary-actions mt-3">
+          <button id="ratingsDashboardBtn" type="button" class="btn btn-outline-dark" disabled>
+            <span class="btn-icon" aria-hidden="true">📊</span>
+            <span class="btn-label">View Ratings Dashboard</span>
+          </button>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 align-items-center justify-content-center text-muted small mt-3">
+          <span class="fw-semibold">Cue sound:</span>
+          <span>Built-in sound</span>
+          <button id="testSoundBtn" type="button" class="btn btn-outline-primary btn-sm">
+            <span class="btn-icon" aria-hidden="true">🔊</span>
+            <span class="btn-label">Test Sound</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <section id="log-section" class="card shadow-sm mb-5">
+      <div class="card-body">
+        <h2 class="h4 text-center mb-3">Timer Log</h2>
+        <div class="table-responsive">
+          <table id="logTable" class="table align-middle">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Topic</th>
+                <th>Total Time</th>
+                <th>Time Status</th>
+              </tr>
+            </thead>
+            <tbody id="logBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <footer class="credits">
+      Created by <a href="https://www.linkedin.com/in/tusharvartak/" target="_blank" rel="noopener noreferrer">Tushar Vartak</a>
+    </footer>
   </div>
-
-  <div id="app">
-    <h1>ToastMasters Timer</h1>
-
-    <div id="meta">
-      <div class="field">
-        <label for="speakerInput">Speaker:</label>
-        <input id="speakerInput" type="text" placeholder="Name" />
-      </div>
-      <div class="field">
-        <label for="topicInput">Topic:</label>
-        <input id="topicInput" type="text" placeholder="Table Topic / Speech Title" />
-      </div>
-    </div>
-
-    <div id="display-bar">
-      <div id="who">Speaker: <span id="speakerName">—</span></div>
-      <div id="topic">Topic: <span id="topicName">—</span></div>
-    </div>
-
-    <div id="timer-display">00:00</div>
-    <div id="grace-indicator" role="status" aria-live="polite" aria-hidden="true">
-      <span class="grace-icon" aria-hidden="true">🕒</span>
-      <span class="grace-text">30s grace period in effect</span>
-    </div>
-
-    <div class="controls">
-      <select id="preset">
-        <option value="TT">Table Topics (1–2 min)</option>
-        <option value="EV">Evaluation (2–3 min)</option>
-        <option value="SP">Speech (5–7 min)</option>
-        <option value="Custom">Custom/Other</option>
-      </select>
-
-      <div class="time-inputs">
-        <label>Green:</label>
-        <input id="green-min" type="number" min="0" value="1" /> :
-        <input id="green-sec" type="number" min="0" max="59" value="0" />
-        <label>Yellow:</label>
-        <input id="yellow-min" type="number" min="0" value="1" /> :
-        <input id="yellow-sec" type="number" min="0" max="59" value="30" />
-        <label>Red:</label>
-        <input id="red-min" type="number" min="0" value="2" /> :
-        <input id="red-sec" type="number" min="0" max="59" value="0" />
-      </div>
-
-          <div class="button-bar primary-actions">
-        <button id="startPauseBtn">
-          <span class="btn-icon" aria-hidden="true">▶️</span>
-          <span class="btn-label">Start</span>
-        </button>
-        <button id="resetBtn">
-          <span class="btn-icon" aria-hidden="true">⟲</span>
-          <span class="btn-label">Reset</span>
-        </button>
-        <button id="endTalkBtn" type="button">
-          <span class="btn-icon" aria-hidden="true">🛑</span>
-          <span class="btn-label">End Talk</span>
-        </button>
-        <button id="downloadCsvBtn" type="button">
-          <span class="btn-icon" aria-hidden="true">⬇️</span>
-          <span class="btn-label">Download CSV</span>
-        </button>
-      </div>
-
-      <div id="hint">Press <strong>Spacebar</strong> to Start/Pause. (Ignored while typing in inputs.)</div>
-
-      <div class="field" style="justify-content:center; gap:12px; margin-top:12px;">
-        <span style="font-weight:600;">Cue sound:</span>
-        <span>Built-in sound</span>
-        <button id="testSoundBtn" type="button">
-          <span class="btn-icon" aria-hidden="true">🔊</span>
-          <span class="btn-label">Test Sound</span>
-        </button>
-      </div>
-    </div>
-
-    <hr class="section-divider" />
-
-    <div id="log-section">
-      <h2>Timer Log</h2>
-      <div style="overflow-x:auto;">
-        <table id="logTable">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Topic</th>
-              <th>Total Time</th>
-              <th>Time Status</th>
-            </tr>
-          </thead>
-          <tbody id="logBody"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <footer class="credits">Created by <a href="https://www.linkedin.com/in/tusharvartak/" target="_blank" rel="noopener noreferrer">Tushar Vartak</a></footer>
-  </div>
-
-  <script>
+<script>
 
     const timerDisplay = document.getElementById('timer-display');
     const presetSelect = document.getElementById('preset');
@@ -470,17 +398,13 @@
     const topicName = document.getElementById('topicName');
     const testSoundBtn = document.getElementById('testSoundBtn');
     const logBody = document.getElementById('logBody');
-    const toggleUiBtn = document.getElementById('toggleUiBtn');
-    const uiVersionLabel = document.getElementById('ui-version-label');
     const metaPanel = document.getElementById('meta');
-    const displayBar = document.getElementById('display-bar');
-    const whoDisplay = document.getElementById('who');
-    const topicDisplay = document.getElementById('topic');
     const controlsPanel = document.querySelector('.controls');
-    const buttonBars = Array.from(document.querySelectorAll('.button-bar'));
     const logSection = document.getElementById('log-section');
     const startPauseLabel = startPauseBtn.querySelector('.btn-label');
     const graceIndicator = document.getElementById('grace-indicator');
+    const runningHint = document.getElementById('running-hint');
+    const ratingsDashboardBtn = document.getElementById('ratingsDashboardBtn');
 
     const numericInputs = [
       greenMinInput,
@@ -491,41 +415,23 @@
       redSecInput
     ];
 
-    const bootstrapFormControls = [
-      speakerInput,
-      topicInput,
-      ...numericInputs
-    ].filter(Boolean);
-
-    const bootstrapButtonConfig = [
-      { element: startPauseBtn, classes: ['btn', 'btn-success'] },
-      { element: resetBtn, classes: ['btn', 'btn-outline-secondary'] },
-      { element: endTalkBtn, classes: ['btn', 'btn-warning'] },
-      { element: downloadCsvBtn, classes: ['btn', 'btn-info', 'text-white'] },
-      { element: testSoundBtn, classes: ['btn', 'btn-outline-primary'] }
-    ];
-
-    const bootstrapClassEntries = [
-      { elements: [metaPanel], classes: ['card', 'shadow-sm', 'p-4', 'mb-4'] },
-      { elements: [displayBar], classes: ['row', 'g-3', 'mb-3', 'align-items-stretch'] },
-      { elements: [whoDisplay, topicDisplay], classes: ['col', 'card', 'shadow-sm', 'p-4', 'text-start'] },
-      { elements: [controlsPanel], classes: ['card', 'shadow-sm', 'p-4', 'mb-4'] },
-      { elements: buttonBars, classes: ['d-flex', 'flex-wrap', 'gap-3', 'justify-content-start'] },
-      { elements: [logSection], classes: ['card', 'shadow-sm', 'p-4'] }
-    ];
-
-    const bootstrapHref = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css';
-    let bootstrapLinkEl = null;
-
     const logRecords = [];
     const GRACE_SECONDS = 30;
+    const RATINGS_SESSION_STORAGE_KEY = 'tmTimer.ratings.sessionId';
+    const RATINGS_SNAPSHOT_STORAGE_KEY = 'tmTimer.ratings.snapshot';
     const cueAudioUrl = 'ding.mp3';
+    const cueAudioTemplate = cueAudioUrl ? new Audio(cueAudioUrl) : null;
+    if (cueAudioTemplate) {
+      cueAudioTemplate.preload = 'auto';
+      try { cueAudioTemplate.load(); } catch (err) { /* no-op */ }
+    }
+    let ratingsSessionId = null;
     let lastCue = 'none';
     let lastGraceState = null;
 
     function playCue() {
-      if (!cueAudioUrl) return;
-      const audio = new Audio(cueAudioUrl);
+      if (!cueAudioTemplate) return;
+      const audio = cueAudioTemplate.cloneNode(true);
       audio.play().catch(() => {});
     }
 
@@ -557,6 +463,91 @@
 
     function setInputsDisabled(state) {
       numericInputs.forEach((input) => { if (input) input.disabled = state; });
+    }
+
+    function setMetaHidden(shouldHide) {
+      if (!metaPanel) return;
+      metaPanel.style.display = shouldHide ? 'none' : '';
+    }
+
+    function setControlsHidden(shouldHide) {
+      if (!controlsPanel) return;
+      controlsPanel.style.display = shouldHide ? 'none' : '';
+    }
+
+    function setRunningHint(shouldShow) {
+      if (!runningHint) return;
+      if (shouldShow) {
+        runningHint.style.display = 'block';
+        runningHint.textContent = 'Press Spacebar to pause and show control buttons.';
+      } else {
+        runningHint.style.display = 'none';
+        runningHint.textContent = '';
+      }
+    }
+
+    function ensureRatingsSessionId() {
+      if (ratingsSessionId) return ratingsSessionId;
+      let restored = null;
+      try {
+        restored = sessionStorage.getItem(RATINGS_SESSION_STORAGE_KEY);
+      } catch (err) {
+        console.warn('Unable to read ratings session id', err);
+      }
+      if (restored) {
+        ratingsSessionId = restored;
+        return ratingsSessionId;
+      }
+      const generated = `tm-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+      ratingsSessionId = generated;
+      try {
+        sessionStorage.setItem(RATINGS_SESSION_STORAGE_KEY, ratingsSessionId);
+      } catch (err) {
+        console.warn('Unable to persist ratings session id', err);
+      }
+      return ratingsSessionId;
+    }
+
+    function generateSpeakerId() {
+      return `sp-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+    }
+
+    function buildRosterSnapshot() {
+      const withinTime = [];
+      logRecords.forEach((record, index) => {
+        if (record.status !== 'Within Time') return;
+        withinTime.push({
+          id: record.id || `sp-${index + 1}`,
+          name: record.name || `Speaker ${index + 1}`,
+          topic: record.topic || '',
+          totalTime: record.totalTime,
+          status: record.status
+        });
+      });
+      return withinTime;
+    }
+
+    function persistRatingsSnapshot() {
+      const sessionId = ensureRatingsSessionId();
+      const snapshot = {
+        sessionId,
+        updatedAt: new Date().toISOString(),
+        roster: buildRosterSnapshot()
+      };
+      try {
+        localStorage.setItem(RATINGS_SNAPSHOT_STORAGE_KEY, JSON.stringify(snapshot));
+      } catch (err) {
+        console.warn('Unable to save ratings snapshot', err);
+      }
+      updateRatingsControls();
+      return snapshot;
+    }
+
+    function updateRatingsControls() {
+      if (!ratingsDashboardBtn) return;
+      const hasRoster = buildRosterSnapshot().length > 0;
+      ratingsDashboardBtn.disabled = !hasRoster;
+      ratingsDashboardBtn.setAttribute('aria-disabled', hasRoster ? 'false' : 'true');
     }
 
     applyPreset(presetSelect.value);
@@ -605,7 +596,7 @@
           timerDisplay.style.color = '#fff';
           break;
         default:
-          document.body.style.backgroundColor = document.body.classList.contains('ui-v2') ? '' : '#fff';
+          document.body.style.backgroundColor = '';
           timerDisplay.style.backgroundColor = 'var(--timer-bg)';
           timerDisplay.style.color = 'var(--timer-color)';
       }
@@ -723,65 +714,6 @@
       return lines.join('\n');
     }
 
-    function toggleBootstrapDecorations(enable) {
-      const method = enable ? 'add' : 'remove';
-      bootstrapClassEntries.forEach(({ elements, classes }) => {
-        const targets = Array.isArray(elements) ? elements : [elements];
-        targets.forEach((node) => {
-          if (!node) return;
-          node.classList[method](...classes);
-        });
-      });
-      bootstrapFormControls.forEach((control) => {
-        control.classList[method]('form-control');
-      });
-      bootstrapButtonConfig.forEach(({ element, classes }) => {
-        if (!element) return;
-        element.classList[method](...classes);
-      });
-      presetSelect.classList[method]('form-select');
-    }
-
-    function loadBootstrapStylesheet() {
-      if (bootstrapLinkEl) return;
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = bootstrapHref;
-      link.crossOrigin = 'anonymous';
-      link.referrerPolicy = 'no-referrer';
-      document.head.appendChild(link);
-      bootstrapLinkEl = link;
-    }
-
-    function unloadBootstrapStylesheet() {
-      if (!bootstrapLinkEl) return;
-      bootstrapLinkEl.remove();
-      bootstrapLinkEl = null;
-    }
-
-    function setUiVersion(version) {
-      const isV2 = version === 'v2';
-      if (isV2) {
-        loadBootstrapStylesheet();
-        document.body.classList.add('ui-v2');
-      } else {
-        document.body.classList.remove('ui-v2');
-        unloadBootstrapStylesheet();
-      }
-      toggleBootstrapDecorations(isV2);
-      if (toggleUiBtn) toggleUiBtn.textContent = isV2 ? 'Switch to Classic UI' : 'Switch to Modern UI';
-      if (uiVersionLabel) uiVersionLabel.textContent = isV2 ? 'UI v2 – Modern' : 'UI v1 – Classic';
-      applyVisualCue('none');
-      if (!isRunning) {
-        setGraceIndicator(false);
-      }
-      lastCue = 'none';
-    }
-
-    toggleUiBtn.addEventListener('click', () => {
-      setUiVersion(document.body.classList.contains('ui-v2') ? 'v1' : 'v2');
-    });
-
     function toggleStartPause() {
       if (!isRunning) {
         isRunning = true;
@@ -791,11 +723,18 @@
           lastCue = 'none';
           setGraceIndicator(false);
         }
+        setMetaHidden(true);
+        setControlsHidden(true);
+        setRunningHint(true);
         timerInterval = setInterval(updateTimer, 1000);
       } else {
         isRunning = false;
         if (startPauseLabel) startPauseLabel.textContent = 'Resume';
         clearInterval(timerInterval);
+        timerInterval = null;
+        setMetaHidden(false);
+        setControlsHidden(false);
+        setRunningHint(false);
       }
     }
 
@@ -813,6 +752,9 @@
       lastCue = 'none';
       setGraceIndicator(false);
       if (startPauseLabel) startPauseLabel.textContent = 'Start';
+      setMetaHidden(false);
+      setControlsHidden(false);
+      setRunningHint(false);
       speakerInput.value = '';
       topicInput.value = '';
       updateSpeaker();
@@ -825,9 +767,10 @@
       const totalTime = formatTime(elapsedSeconds);
       const status = evaluateStatus(elapsedSeconds);
 
-      const record = { name, topic, totalTime, status: status.label };
+      const record = { id: generateSpeakerId(), name, topic, totalTime, status: status.label };
       logRecords.push(record);
       appendLogRow({ ...record, statusLabel: status.label, statusClass: status.className, statusIcon: status.icon });
+      persistRatingsSnapshot();
 
       if (timerInterval) {
         clearInterval(timerInterval);
@@ -840,6 +783,9 @@
       lastCue = 'none';
       setGraceIndicator(false);
       if (startPauseLabel) startPauseLabel.textContent = 'Start';
+      setMetaHidden(false);
+      setControlsHidden(false);
+      setRunningHint(false);
       speakerInput.value = '';
       topicInput.value = '';
       updateSpeaker();
@@ -861,13 +807,25 @@
       URL.revokeObjectURL(url);
     });
 
+    ratingsDashboardBtn?.addEventListener('click', () => {
+      const snapshot = persistRatingsSnapshot();
+      const dashboardUrl = new URL('ratings-dashboard.html', window.location.href);
+      dashboardUrl.searchParams.set('session', snapshot.sessionId);
+      window.open(dashboardUrl.toString(), '_blank', 'noopener');
+    });
+
     document.addEventListener('keydown', (event) => {
-      if (event.code === 'Space') {
-        const tag = document.activeElement?.tagName;
-        if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') {
-          event.preventDefault();
-          toggleStartPause();
-        }
+      const tag = document.activeElement?.tagName;
+      const isFormField = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+
+      if (event.code === 'Space' && !isFormField) {
+        event.preventDefault();
+        toggleStartPause();
+      }
+
+      if (event.code === 'KeyB' && !event.repeat && !isFormField) {
+        event.preventDefault();
+        playCue();
       }
     });
 
@@ -887,12 +845,16 @@
 
     testSoundBtn?.addEventListener('click', playCue);
 
+    ensureRatingsSessionId();
+    updateRatingsControls();
 
     updateSpeaker();
     updateTopic();
-    setUiVersion('v1');
     applyVisualCue('none');
     setGraceIndicator(false);
+    setMetaHidden(false);
+    setControlsHidden(false);
+    setRunningHint(false);
   </script>
 </body>
 </html>

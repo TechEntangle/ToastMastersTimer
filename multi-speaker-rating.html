@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rate Speakers</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+      background: #f7f9fc;
+      color: #111;
+    }
+
+    body {
+      margin: 0;
+      padding: 28px 16px 40px;
+      background: linear-gradient(160deg, #f7f9fc 0%, #ebf1ff 100%);
+    }
+
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 22px;
+      padding: 28px;
+      box-shadow: 0 18px 42px rgba(15, 23, 42, 0.12);
+      border: 1px solid rgba(15, 23, 42, 0.05);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.8rem, 5vw, 2.4rem);
+      color: #0d1b3d;
+      text-align: center;
+    }
+
+    .session-tag {
+      margin: 8px auto 24px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: #e9efff;
+      color: #274690;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .instructions {
+      text-align: center;
+      margin-bottom: 20px;
+      color: rgba(15, 23, 42, 0.7);
+    }
+
+    .speaker-list {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    .empty-state {
+      padding: 28px 16px;
+      text-align: center;
+      border: 2px dashed rgba(15, 23, 42, 0.18);
+      border-radius: 18px;
+      color: rgba(15, 23, 42, 0.6);
+      font-weight: 600;
+    }
+
+    .speaker-card {
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08);
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .speaker-card h2 {
+      margin: 0;
+      font-size: 1.25rem;
+      color: #0d1b3d;
+    }
+
+    .speaker-card p {
+      margin: 0;
+      color: rgba(15, 23, 42, 0.7);
+    }
+
+    .stars {
+      display: inline-flex;
+      gap: 10px;
+      font-size: 2.2rem;
+      cursor: pointer;
+    }
+
+    .star {
+      color: #d0d5e0;
+      transition: transform 0.15s ease, color 0.2s ease;
+      user-select: none;
+    }
+
+    .star.hover,
+    .star.selected {
+      color: #f7b351;
+      transform: translateY(-2px);
+    }
+
+    .star[aria-checked="true"] {
+      outline: 2px solid #0d6efd;
+      outline-offset: 4px;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px 22px;
+      border-radius: 999px;
+      border: none;
+      background: linear-gradient(135deg, #0d6efd, #6610f2);
+      color: #fff;
+      font-size: 1.05rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.2s ease;
+    }
+
+    button:disabled {
+      background: #cdd5f5;
+      cursor: not-allowed;
+    }
+
+    button:not(:disabled):hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 24px rgba(13, 110, 253, 0.28);
+    }
+
+    .message {
+      margin-top: 18px;
+      font-size: 0.95rem;
+      min-height: 1.4rem;
+      text-align: center;
+    }
+
+    .success {
+      color: #17683b;
+    }
+
+    .error {
+      color: #c62828;
+    }
+
+    @media (max-width: 640px) {
+      main {
+        padding: 22px 18px;
+      }
+
+      .speaker-card {
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Rate Our Speakers</h1>
+    <div class="session-tag" id="sessionTag"></div>
+    <p class="instructions">Tap the stars for each speaker, then submit once to share your feedback.</p>
+    <div id="speakerList" class="speaker-list"></div>
+    <button id="submitBtn" type="button">Submit Ratings</button>
+    <div class="message" id="message"></div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script>
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      const sessionId = params.get('session');
+      const payloadParam = params.get('data');
+
+      const decodePayload = (value) => {
+        try {
+          const base64 = decodeURIComponent(value);
+          const decoded = window.atob(base64);
+          const json = decodeURIComponent(escape(decoded));
+          return JSON.parse(json);
+        } catch (err) {
+          console.error('Failed to decode speakers payload', err);
+          return null;
+        }
+      };
+
+      if (!sessionId) {
+        document.body.innerHTML = '<main><h1>Missing session information</h1><p>Use the dashboard QR to open this form.</p></main>';
+        return;
+      }
+
+      const supabaseConfig = window.tmSupabaseConfig || {};
+      const supabase = (window.supabase && supabaseConfig.url && supabaseConfig.anonKey)
+        ? window.supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey)
+        : null;
+      if (!supabase) {
+        console.warn('Supabase client unavailable; ratings will only sync on this device.');
+      }
+
+      const fallbackSpeakers = payloadParam ? (decodePayload(payloadParam) || []) : [];
+      const SNAPSHOT_STORAGE_KEY = 'tmTimer.ratings.snapshot';
+
+      const sessionTag = document.getElementById('sessionTag');
+      const speakerList = document.getElementById('speakerList');
+      const submitBtn = document.getElementById('submitBtn');
+      const messageEl = document.getElementById('message');
+
+      sessionTag.textContent = `Session ID: ${sessionId}`;
+      submitBtn.disabled = true;
+
+      const signalKey = `tm_rating_signal_${sessionId}`;
+      const broadcastChannel = window.BroadcastChannel ? new BroadcastChannel('tm_ratings_channel') : null;
+      const selections = new Map();
+      const starControllers = new Map();
+
+      const setMessage = (text, type) => {
+        messageEl.textContent = text;
+        messageEl.className = type ? `message ${type}` : 'message';
+      };
+
+      const makeUid = () => (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`);
+
+      let lastRosterSignature = null;
+      let speakers = [];
+
+      const sanitizeRoster = (list) => {
+        if (!Array.isArray(list)) return [];
+        const cleaned = [];
+        const seen = new Set();
+        list.forEach((entry, index) => {
+          if (!entry) return;
+          const statusRaw = (entry.status ?? entry.time_status ?? '').toString();
+          const statusNormalized = statusRaw.trim().toLowerCase();
+          if (statusNormalized && statusNormalized !== 'within time') return;
+          const safe = {
+            id: entry.speaker_id || entry.id || `sp-${index + 1}`,
+            name: (entry.name ?? '').trim(),
+            topic: (entry.topic ?? '').trim(),
+            status: statusNormalized ? 'Within Time' : '',
+            totalTime: entry.totalTime ?? entry.total_time ?? ''
+          };
+          if (!safe.name) safe.name = `Speaker ${cleaned.length + 1}`;
+          if (seen.has(safe.id)) return;
+          seen.add(safe.id);
+          cleaned.push(safe);
+        });
+        return cleaned;
+      };
+
+      const rosterSignature = (list) => {
+        if (!Array.isArray(list)) return '';
+        return list.map((entry) => `${entry.id}:${entry.name}:${entry.topic}`).join('|');
+      };
+
+      const renderEmptyState = () => {
+        speakerList.innerHTML = '<p class="empty-state">No speakers are eligible for rating yet.</p>';
+        selections.clear();
+        starControllers.clear();
+        submitBtn.disabled = true;
+        setMessage('Waiting for the timer to publish eligible speakers...', '');
+      };
+
+      const updateSubmitState = () => {
+        if (!speakers.length) {
+          submitBtn.disabled = true;
+          return;
+        }
+        const allRated = speakers.every((speaker) => {
+          const value = selections.get(speaker.id);
+          return Number.isFinite(value) && value >= 1 && value <= 5;
+        });
+        submitBtn.disabled = !allRated;
+      };
+
+      const applyRosterUpdate = (list) => {
+        const cleaned = sanitizeRoster(list);
+        const signature = rosterSignature(cleaned);
+        if (signature === lastRosterSignature) return cleaned.length;
+        lastRosterSignature = signature;
+        speakers = cleaned;
+        if (!speakers.length) {
+          renderEmptyState();
+          return 0;
+        }
+        renderSpeakers(true);
+        return speakers.length;
+      };
+
+      const readRosterSnapshot = () => {
+        try {
+          const raw = localStorage.getItem(SNAPSHOT_STORAGE_KEY);
+          if (!raw) return null;
+          const parsed = JSON.parse(raw);
+          if (!parsed || parsed.sessionId !== sessionId) return null;
+          if (!Array.isArray(parsed.roster)) return [];
+          return parsed.roster;
+        } catch (err) {
+          console.warn('Unable to read roster snapshot', err);
+          return null;
+        }
+      };
+
+      function createStarRow(speaker, initialSelection = selections.get(speaker.id) || 0) {
+        const card = document.createElement('article');
+        card.className = 'speaker-card';
+        card.dataset.speakerId = speaker.id;
+
+        const meta = document.createElement('div');
+        const title = document.createElement('h2');
+        title.textContent = speaker.name || 'Unnamed Speaker';
+        const topic = document.createElement('p');
+        topic.textContent = speaker.topic ? `Topic: ${speaker.topic}` : 'Topic not provided';
+        meta.append(title, topic);
+        card.appendChild(meta);
+
+        const starsContainer = document.createElement('div');
+        starsContainer.className = 'stars';
+        starsContainer.setAttribute('role', 'radiogroup');
+        starsContainer.setAttribute('aria-label', `Rate ${speaker.name || 'speaker'}`);
+        starsContainer.tabIndex = -1;
+
+        const stars = [];
+        let selected = Number.isFinite(initialSelection) ? Math.max(0, Math.min(5, initialSelection)) : 0;
+        if (selected >= 1) {
+          selections.set(speaker.id, selected);
+        } else {
+          selections.delete(speaker.id);
+        }
+
+        const updateStars = (hover = 0) => {
+          stars.forEach((star, index) => {
+            const value = index + 1;
+            star.classList.toggle('selected', value <= selected);
+            star.classList.toggle('hover', hover && value <= hover);
+            star.setAttribute('aria-checked', String(value === selected));
+          });
+        };
+
+        const updateSelection = (value) => {
+          selected = value;
+          if (selected >= 1) {
+            selections.set(speaker.id, selected);
+          } else {
+            selections.delete(speaker.id);
+          }
+          updateStars();
+          updateSubmitState();
+        };
+
+        for (let i = 1; i <= 5; i++) {
+          const span = document.createElement('span');
+          span.textContent = '★';
+          span.className = 'star';
+          span.setAttribute('role', 'radio');
+          span.setAttribute('tabindex', '0');
+          span.setAttribute('aria-checked', 'false');
+          span.dataset.value = String(i);
+
+          span.addEventListener('mouseenter', () => updateStars(i));
+          span.addEventListener('mouseleave', () => updateStars());
+          span.addEventListener('click', () => {
+            updateSelection(i);
+          });
+          span.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              updateSelection(i);
+            }
+          });
+
+          stars.push(span);
+          starsContainer.appendChild(span);
+        }
+
+        starControllers.set(speaker.id, {
+          updateStars,
+          reset: () => {
+            updateSelection(0);
+          }
+        });
+
+        card.appendChild(starsContainer);
+        speakerList.appendChild(card);
+        updateStars();
+      }
+
+      function renderSpeakers(preserveSelections = false) {
+        const previousSelections = preserveSelections ? new Map(selections) : new Map();
+        speakerList.innerHTML = '';
+        selections.clear();
+        starControllers.clear();
+        if (!speakers.length) {
+          renderEmptyState();
+          return;
+        }
+        speakers.forEach((speaker) => {
+          const initial = previousSelections.get(speaker.id) || 0;
+          createStarRow(speaker, initial);
+        });
+        setMessage('', '');
+        updateSubmitState();
+      }
+
+      const loadSpeakers = async () => {
+        if (!supabase) return null;
+        try {
+          const { data, error } = await supabase
+            .from('speakers')
+            .select('speaker_id,name,topic,status,total_time')
+            .eq('session_id', sessionId);
+          if (error) throw error;
+          if (data && data.length) return data;
+        } catch (err) {
+          console.warn('Unable to fetch speakers from Supabase', err);
+        }
+        return null;
+      };
+
+      const initialize = async () => {
+        const snapshot = readRosterSnapshot();
+        if (snapshot !== null) {
+          applyRosterUpdate(snapshot);
+        }
+
+        if (!speakers.length && Array.isArray(fallbackSpeakers) && fallbackSpeakers.length) {
+          applyRosterUpdate(fallbackSpeakers);
+        }
+
+        const remote = await loadSpeakers();
+        if (Array.isArray(remote) && remote.length) {
+          applyRosterUpdate(remote);
+        }
+
+        if (!speakers.length) {
+          renderEmptyState();
+          return;
+        }
+
+        updateSubmitState();
+      };
+
+      initialize();
+
+      window.addEventListener('storage', (event) => {
+        if (event.key !== SNAPSHOT_STORAGE_KEY) return;
+        if (!event.newValue) {
+          applyRosterUpdate([]);
+          return;
+        }
+        try {
+          const parsed = JSON.parse(event.newValue);
+          if (parsed && parsed.sessionId === sessionId) {
+            applyRosterUpdate(parsed.roster || []);
+          }
+        } catch (err) {
+          console.warn('Invalid roster snapshot payload', err);
+        }
+      });
+
+      submitBtn.addEventListener('click', async () => {
+        if (!speakers.length) {
+          setMessage('No speakers available for rating.', 'error');
+          return;
+        }
+
+        const ratedEntries = speakers.map((speaker) => ({
+          speaker,
+          rating: Number(selections.get(speaker.id))
+        }));
+
+        const missing = ratedEntries.filter(({ rating }) => !Number.isFinite(rating) || rating < 1 || rating > 5);
+
+        if (missing.length) {
+          setMessage('Please rate every speaker before submitting.', 'error');
+          const target = document.querySelector(`[data-speaker-id="${missing[0].speaker.id}"] .stars`);
+          if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            try { target.focus({ preventScroll: true }); } catch (_) { target.focus(); }
+          }
+          return;
+        }
+
+        setMessage('', '');
+        submitBtn.disabled = true;
+
+        const batchId = makeUid();
+        const entriesPayload = ratedEntries.map(({ speaker, rating }, idx) => ({
+          speakerId: speaker.id,
+          rating,
+          timestamp: Date.now(),
+          uid: makeUid(),
+          order: idx
+        }));
+
+        let supabaseSynced = false;
+        if (supabase) {
+          try {
+            const rows = ratedEntries.map(({ speaker, rating }) => ({
+              session_id: sessionId,
+              speaker_id: speaker.id,
+              rating
+            }));
+            const { error } = await supabase.from('ratings').insert(rows);
+            if (error) throw error;
+            supabaseSynced = true;
+          } catch (err) {
+            console.warn('Supabase insert failed, falling back to local broadcast only.', err);
+            const message = String(err?.message || err || '');
+            if (!/foreign key/i.test(message)) {
+              setMessage(`Unable to submit ratings right now. ${message}`, 'error');
+              submitBtn.disabled = false;
+              return;
+            }
+          }
+        } else {
+          console.warn('Submitting ratings without Supabase connection; results will only be available on this device.');
+        }
+
+        const message = { type: 'tm-rating-batch', sessionId, entries: entriesPayload, batchId };
+
+        try {
+          localStorage.setItem(signalKey, JSON.stringify(message));
+        } catch (err) {
+          console.warn('Unable to persist rating payload in localStorage', err);
+        }
+
+        try {
+          if (window.opener && !window.opener.closed) {
+            window.opener.postMessage(message, '*');
+          }
+          window.postMessage(message, '*');
+        } catch (err) {
+          console.warn('postMessage failed for rating payload', err);
+        }
+
+        try {
+          broadcastChannel?.postMessage(message);
+        } catch (err) {
+          console.warn('BroadcastChannel failed for rating payload', err);
+        }
+
+        const successText = supabaseSynced
+          ? 'Thank you! Your ratings have been recorded.'
+          : 'Thank you! Your ratings have been recorded locally.';
+        setMessage(successText, 'success');
+        setTimeout(() => {
+          try { broadcastChannel?.close(); } catch (_) {}
+          window.close();
+        }, 800);
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ToastMasters Ratings Dashboard</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+      background: #f5f6fa;
+      color: #111;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      background: #f5f6fa;
+    }
+
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+    }
+
+    .session-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: #e9efff;
+      color: #274690;
+      font-weight: 600;
+      font-size: 0.92rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 18px;
+    }
+
+    .empty-state {
+      grid-column: 1 / -1;
+      padding: 32px;
+      text-align: center;
+      background: rgba(13, 27, 61, 0.04);
+      border: 1px dashed rgba(13, 27, 61, 0.18);
+      border-radius: 16px;
+      font-weight: 600;
+      color: rgba(13, 27, 61, 0.55);
+    }
+
+    .card {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 18px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+      border: 1px solid rgba(15, 23, 42, 0.05);
+      position: relative;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .card h2 {
+      margin: 0;
+      font-size: 1.25rem;
+      color: #0d1b3d;
+    }
+
+    .winner-badge {
+      display: none;
+      font-size: 1.8rem;
+      transform: rotate(-6deg);
+      transition: transform 0.2s ease, opacity 0.2s ease;
+      filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.25));
+    }
+
+    .card.winner .winner-badge {
+      display: inline-flex;
+      opacity: 1;
+    }
+
+    .card p {
+      margin: 0;
+      color: rgba(15, 23, 42, 0.7);
+    }
+
+    .stats {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+    }
+
+    .stats strong {
+      font-size: 1.6rem;
+    }
+
+    .stats span {
+      font-size: 0.95rem;
+      opacity: 0.7;
+    }
+
+    #share-link-panel {
+      margin: 0 auto 32px;
+      max-width: 480px;
+      background: #fff;
+      border-radius: 18px;
+      padding: 20px;
+      box-shadow: 0 16px 30px rgba(15, 23, 42, 0.1);
+      border: 1px solid rgba(15, 23, 42, 0.06);
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
+
+    .share-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    .share-link-button,
+    #copy-rating-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 22px;
+      border-radius: 999px;
+      border: none;
+      font-weight: 600;
+      font-size: 1rem;
+      color: #fff;
+      background: linear-gradient(135deg, #0d6efd, #6610f2);
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.2s ease;
+    }
+
+    .share-link-button:disabled,
+    #copy-rating-link:disabled {
+      background: #c8d4fb;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
+
+    .share-link-button:not(:disabled):hover,
+    #copy-rating-link:not(:disabled):hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 28px rgba(13, 110, 253, 0.25);
+    }
+
+    .share-link-button:focus-visible,
+    #copy-rating-link:focus-visible {
+      outline: 3px solid rgba(13, 110, 253, 0.35);
+      outline-offset: 3px;
+    }
+
+    #qr-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      z-index: 1000;
+    }
+
+    #qr-modal.active {
+      display: flex;
+    }
+
+    #qr-modal .modal-content {
+      background: #fff;
+      border-radius: 18px;
+      padding: 24px 28px;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.25);
+      text-align: center;
+      position: relative;
+    }
+
+    #qr-modal .modal-content h2 {
+      margin-top: 0;
+      margin-bottom: 12px;
+      font-size: 1.25rem;
+      color: #0d1b3d;
+    }
+
+    #qr-modal .modal-actions {
+      margin-top: 18px;
+      display: flex;
+      justify-content: center;
+    }
+
+    #qr-close-btn {
+      padding: 8px 18px;
+      border-radius: 999px;
+      border: none;
+      background: #0d6efd;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    #qr-code-output svg {
+      width: 240px;
+      height: 240px;
+    }
+
+    #group-rating-link {
+      font-weight: 600;
+      color: #0d6efd;
+      text-decoration: none;
+    }
+
+    .copy-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: center;
+      width: 100%;
+    }
+
+    #copy-rating-link {
+      padding: 10px 18px;
+      border: none;
+      border-radius: 999px;
+      background: #0d6efd;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+
+    #copy-rating-link:hover {
+      background: #0b5ed7;
+      transform: translateY(-1px);
+    }
+
+    #copy-rating-link:active {
+      transform: translateY(0);
+    }
+
+    #copy-rating-link:disabled {
+      background: #a5c3f9;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .copy-status {
+      font-size: 0.9rem;
+      min-height: 1.2em;
+      color: #17683b;
+      text-align: center;
+    }
+
+    .copy-status.error {
+      color: #c62828;
+    }
+
+    .qr-fallback {
+      display: inline-block;
+      padding: 24px 16px;
+      border: 2px dashed rgba(13, 27, 61, 0.3);
+      border-radius: 12px;
+      color: rgba(13, 27, 61, 0.6);
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .note {
+      margin-top: 16px;
+      font-size: 0.9rem;
+      opacity: 0.75;
+      text-align: center;
+    }
+
+    .table-wrapper {
+      margin-top: 32px;
+      background: #fff;
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+      border: 1px solid rgba(15, 23, 42, 0.05);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    }
+
+    th {
+      background: rgba(15, 23, 42, 0.04);
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 18px;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>ToastMasters Ratings Dashboard</h1>
+      <p class="note">Copy and share the link below so attendees can rate all speakers from their own device in a single submission. Ratings stay in the browser and aggregate in real time while this page remains open.</p>
+    </header>
+
+    <section id="share-link-panel">
+      <div class="share-actions">
+        <button type="button" class="share-link-button" id="group-rating-button" disabled>Open audience rating form</button>
+        <button type="button" id="copy-rating-link" disabled>Copy rating form link</button>
+        <button type="button" class="share-link-button" id="show-qr-button" disabled>QR Code</button>
+      </div>
+      <span id="copy-status" class="copy-status" aria-live="polite"></span>
+    </section>
+
+    <div id="qr-modal" role="dialog" aria-modal="true" aria-labelledby="qr-modal-title" aria-hidden="true">
+      <div class="modal-content">
+        <h2 id="qr-modal-title">Audience Rating QR Code</h2>
+        <p style="margin-top:0;margin-bottom:16px;color:rgba(15,23,42,0.65);">Scan to open the audience rating form.</p>
+        <div id="qr-code-output" role="img" aria-label="QR code for the audience rating form" style="display:flex;justify-content:center;margin-bottom:16px;"></div>
+        <div class="modal-actions">
+          <button type="button" id="qr-close-btn">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <section class="grid" id="speakersGrid"></section>
+
+    <section class="table-wrapper" id="leaderboardSection" hidden>
+      <h2 style="margin-top:0;">Live Leaderboard</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Speaker</th>
+            <th>Topic</th>
+            <th>Average</th>
+            <th>Votes</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboardBody"></tbody>
+      </table>
+    </section>
+
+    <p class="note">Refresh clears the local cache of ratings. Keep this page open on the main display during the meeting for automatic updates.</p>
+  </main>
+
+  <template id="speaker-card-template">
+    <article class="card">
+      <div class="card-header">
+        <h2 class="speaker-name"></h2>
+        <span class="winner-badge" aria-hidden="true">👑</span>
+      </div>
+      <p class="speaker-topic"></p>
+      <div class="stats">
+        <strong class="avg">0.00</strong>
+        <span class="votes">0 votes</span>
+      </div>
+    </article>
+  </template>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
+  <script src="qrcodegen.js"></script>
+
+  <script>
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      const sessionId = params.get('session');
+      const payloadParam = params.get('data');
+
+      const decode = (value) => {
+        try {
+          const decoded = window.atob(decodeURIComponent(value));
+          const json = decodeURIComponent(escape(decoded));
+          return JSON.parse(json);
+        } catch (err) {
+          console.error('Failed to decode speakers payload', err);
+          return null;
+        }
+      };
+
+      if (!sessionId) {
+        document.body.innerHTML = '<main><h1>Missing session information</h1><p>Re-open the dashboard from the timer page.</p></main>';
+        return;
+      }
+
+      const fallbackSpeakers = payloadParam ? (decode(payloadParam) || []) : [];
+      const fallbackOrder = new Map(Array.isArray(fallbackSpeakers) ? fallbackSpeakers.map((speaker, index) => [speaker.id, index]) : []);
+      const SNAPSHOT_STORAGE_KEY = 'tmTimer.ratings.snapshot';
+
+      const supabaseConfig = window.tmSupabaseConfig || {};
+      const supabase = (window.supabase && supabaseConfig.url && supabaseConfig.anonKey)
+        ? window.supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey)
+        : null;
+      if (!supabase) {
+        console.warn('Supabase client unavailable; ratings will only sync on this device.');
+      }
+
+      let speakers = Array.isArray(fallbackSpeakers) ? fallbackSpeakers.slice() : [];
+      let realtimeChannel = null;
+      let ratingsPoll = null;
+      let lastRosterSignature = null;
+      const RATINGS_POLL_INTERVAL = 5000;
+
+      const signalKey = `tm_rating_signal_${sessionId}`;
+      const cacheKey = `tm_ratings_cache_${sessionId}`;
+      const ratings = Object.create(null);
+      const cardsById = Object.create(null);
+      const processedLocalIds = new Set();
+      const processedRemoteIds = new Set();
+      let hydrateDebounce = null;
+
+      const speakersGrid = document.getElementById('speakersGrid');
+      const template = document.getElementById('speaker-card-template');
+      const leaderboardSection = document.getElementById('leaderboardSection');
+      const leaderboardBody = document.getElementById('leaderboardBody');
+      const groupRatingButton = document.getElementById('group-rating-button');
+
+      const copyLinkBtn = document.getElementById('copy-rating-link');
+      const copyStatusEl = document.getElementById('copy-status');
+      const showQrBtn = document.getElementById('show-qr-button');
+      const qrModal = document.getElementById('qr-modal');
+      const qrCodeOutput = document.getElementById('qr-code-output');
+      const qrCloseBtn = document.getElementById('qr-close-btn');
+
+      let copyStatusTimeout;
+      let latestRatingUrl = '';
+
+      const ensureArray = (id) => {
+        if (!ratings[id]) ratings[id] = [];
+        return ratings[id];
+      };
+
+      function sanitizeRoster(list) {
+        if (!Array.isArray(list)) return [];
+        return list.map((entry, index) => {
+          const safe = entry || {};
+          const id = safe.id || `sp-${index + 1}`;
+          return {
+            id,
+            name: (safe.name ?? '').trim() || `Speaker ${index + 1}`,
+            topic: (safe.topic ?? '').trim(),
+            status: safe.status ?? '',
+            totalTime: safe.totalTime ?? ''
+          };
+        });
+      }
+
+      function readRosterSnapshot() {
+        try {
+          const raw = localStorage.getItem(SNAPSHOT_STORAGE_KEY);
+          if (!raw) return null;
+          const parsed = JSON.parse(raw);
+          if (!parsed || parsed.sessionId !== sessionId) return null;
+          if (!Array.isArray(parsed.roster)) return [];
+          return sanitizeRoster(parsed.roster);
+        } catch (err) {
+          console.warn('Unable to read roster snapshot', err);
+          return null;
+        }
+      }
+
+      function rosterSignature(list) {
+        if (!Array.isArray(list)) return '';
+        return list.map((entry) => `${entry.id}:${entry.name}:${entry.topic}:${entry.status}`).join('|');
+      }
+
+      const encodeRoster = (list) => encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(list)))));
+
+      const buildGroupRatingUrl = () => {
+        const url = new URL('multi-speaker-rating.html', window.location.href);
+        url.searchParams.set('session', sessionId);
+        url.searchParams.set('data', encodeRoster(speakers));
+        return url;
+      };
+
+      const toggleShareButtons = (enabled) => {
+        if (groupRatingButton) {
+          groupRatingButton.disabled = !enabled;
+          if (!enabled) delete groupRatingButton.dataset.url;
+        }
+        if (copyLinkBtn) {
+          copyLinkBtn.disabled = !enabled;
+          if (!enabled) delete copyLinkBtn.dataset.url;
+        }
+        if (showQrBtn) {
+          showQrBtn.disabled = !enabled;
+          if (!enabled) delete showQrBtn.dataset.url;
+        }
+      };
+
+      function renderEmptyState() {
+        if (!speakersGrid) return;
+        speakersGrid.innerHTML = '<div class="empty-state">No speakers are available for rating yet.</div>';
+        Object.keys(cardsById).forEach((key) => delete cardsById[key]);
+        toggleShareButtons(false);
+        latestRatingUrl = '';
+        if (leaderboardSection) {
+          leaderboardSection.hidden = true;
+        }
+        if (leaderboardBody) {
+          leaderboardBody.innerHTML = '';
+        }
+      }
+
+      function applyRosterUpdate(list) {
+        const cleaned = sanitizeRoster(list);
+        const signature = rosterSignature(cleaned);
+        if (signature === lastRosterSignature) return cleaned.length;
+        lastRosterSignature = signature;
+        fallbackOrder.clear();
+        cleaned.forEach((entry, index) => fallbackOrder.set(entry.id, index));
+        speakers = cleaned;
+        if (!speakers.length) {
+          Object.keys(ratings).forEach((key) => { delete ratings[key]; });
+          renderEmptyState();
+          persistCache();
+          return 0;
+        }
+        Object.keys(ratings).forEach((key) => {
+          if (!speakers.some((speaker) => speaker.id === key)) {
+            delete ratings[key];
+          }
+        });
+        speakers.forEach((speaker) => ensureArray(speaker.id));
+        renderCards();
+        updateRatingDestination();
+        speakers.forEach((speaker) => updateCardStats(speaker.id));
+        renderLeaderboard();
+        updateWinnerBadge();
+        persistCache();
+        return speakers.length;
+      }
+
+      const setCopyStatus = (message, { isError = false, persist = false } = {}) => {
+        if (!copyStatusEl) return;
+        if (copyStatusTimeout) {
+          clearTimeout(copyStatusTimeout);
+        }
+        copyStatusEl.textContent = message;
+        copyStatusEl.classList.toggle('error', !!isError);
+        if (!persist && message) {
+          copyStatusTimeout = setTimeout(() => {
+            copyStatusEl.textContent = '';
+            copyStatusEl.classList.remove('error');
+          }, 3500);
+        }
+      };
+
+      const updateRatingDestination = () => {
+        if (!speakers.length) {
+          latestRatingUrl = '';
+          toggleShareButtons(false);
+          return '';
+        }
+        const ratingUrl = buildGroupRatingUrl().toString();
+        latestRatingUrl = ratingUrl;
+        if (groupRatingButton) {
+          groupRatingButton.disabled = false;
+          groupRatingButton.dataset.url = ratingUrl;
+        }
+        if (copyLinkBtn) {
+          copyLinkBtn.disabled = false;
+          copyLinkBtn.dataset.url = ratingUrl;
+        }
+        if (showQrBtn) {
+          showQrBtn.disabled = false;
+          showQrBtn.dataset.url = ratingUrl;
+        }
+        return ratingUrl;
+      };
+
+      const ensureQrCodeInModal = () => {
+        const ratingUrl = latestRatingUrl || updateRatingDestination();
+        if (!ratingUrl || !qrCodeOutput) return;
+        qrCodeOutput.innerHTML = '';
+        try {
+          if (!window.qrcodegen || !window.qrcodegen.QrCode) {
+            throw new Error('QR library unavailable');
+          }
+          const qr = window.qrcodegen.QrCode.encodeText(ratingUrl, window.qrcodegen.QrCode.Ecc.MEDIUM);
+          const scale = 8;
+          const border = 4;
+          const size = qr.size;
+          const canvasSize = (size + border * 2) * scale;
+          const canvas = document.createElement('canvas');
+          canvas.width = canvasSize;
+          canvas.height = canvasSize;
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, canvasSize, canvasSize);
+          ctx.fillStyle = '#000000';
+          for (let y = 0; y < size; y += 1) {
+            for (let x = 0; x < size; x += 1) {
+              if (qr.getModule(x, y)) {
+                ctx.fillRect((x + border) * scale, (y + border) * scale, scale, scale);
+              }
+            }
+          }
+          const img = document.createElement('img');
+          img.src = canvas.toDataURL('image/png');
+          img.width = canvasSize;
+          img.height = canvasSize;
+          img.alt = 'QR code for the audience rating form';
+          qrCodeOutput.appendChild(img);
+        } catch (error) {
+          console.error('Failed to render QR code', error);
+          const fallback = document.createElement('div');
+          fallback.className = 'qr-fallback';
+          fallback.textContent = `QR code unavailable: ${error?.message || error}`;
+          qrCodeOutput.appendChild(fallback);
+        }
+      };
+
+      const openQrModal = () => {
+        if (!qrModal) return;
+        const ratingUrl = latestRatingUrl || updateRatingDestination();
+        if (!ratingUrl) {
+          alert('No speakers are available for rating yet.');
+          return;
+        }
+        qrModal.classList.add('active');
+        qrModal.setAttribute('aria-hidden', 'false');
+        ensureQrCodeInModal();
+        if (qrCloseBtn) {
+          qrCloseBtn.focus({ preventScroll: true });
+        }
+      };
+
+      const closeQrModal = () => {
+        if (!qrModal) return;
+        qrModal.classList.remove('active');
+        qrModal.setAttribute('aria-hidden', 'true');
+      };
+
+      groupRatingButton?.addEventListener('click', () => {
+        const ratingUrl = latestRatingUrl || updateRatingDestination();
+        if (!ratingUrl) {
+          alert('No speakers are available for rating yet.');
+          return;
+        }
+        window.open(ratingUrl, '_blank', 'noopener');
+      });
+
+      copyLinkBtn?.addEventListener('click', async () => {
+        const ratingUrl = latestRatingUrl || updateRatingDestination();
+        if (!ratingUrl) {
+          setCopyStatus('No rating link available.', { isError: true });
+          return;
+        }
+        const handleSuccess = () => setCopyStatus('Link copied to clipboard.');
+        const handleFailure = (error) => {
+          console.error('Failed to copy rating link', error);
+          setCopyStatus(`Copy failed. Link: ${ratingUrl}`, { isError: true, persist: true });
+        };
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(ratingUrl);
+            handleSuccess();
+            return;
+          }
+          throw new Error('Clipboard API not available');
+        } catch (err) {
+          try {
+            const textarea = document.createElement('textarea');
+            textarea.value = ratingUrl;
+            textarea.setAttribute('readonly', '');
+            textarea.style.position = 'absolute';
+            textarea.style.left = '-9999px';
+            document.body.appendChild(textarea);
+            textarea.select();
+            const success = document.execCommand && document.execCommand('copy');
+            document.body.removeChild(textarea);
+            if (success) {
+              handleSuccess();
+              return;
+            }
+            handleFailure(err);
+          } catch (fallbackErr) {
+            handleFailure(fallbackErr);
+          }
+        }
+      });
+
+      showQrBtn?.addEventListener('click', openQrModal);
+      qrCloseBtn?.addEventListener('click', closeQrModal);
+      qrModal?.addEventListener('click', (event) => {
+        if (event.target === qrModal) {
+          closeQrModal();
+        }
+      });
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && qrModal?.classList.contains('active')) {
+          closeQrModal();
+        }
+      });
+
+      const scheduleHydrate = (delay = 400) => {
+        if (!supabase) return;
+        if (hydrateDebounce) clearTimeout(hydrateDebounce);
+        hydrateDebounce = setTimeout(() => {
+          hydrateSupabaseRatings();
+        }, delay);
+      };
+
+      const loadCache = () => {
+        try {
+          const stored = localStorage.getItem(cacheKey);
+          if (stored) {
+            const obj = JSON.parse(stored);
+            Object.keys(obj).forEach((key) => {
+              if (Array.isArray(obj[key])) {
+                ratings[key] = obj[key].map((value) => Number(value)).filter((value) => Number.isFinite(value));
+              }
+            });
+          }
+        } catch (err) {
+          console.warn('Unable to restore cached ratings', err);
+        }
+      };
+
+      const persistCache = () => {
+        try {
+          localStorage.setItem(cacheKey, JSON.stringify(ratings));
+        } catch (err) {
+          console.warn('Failed to persist ratings cache', err);
+        }
+      };
+
+      const updateWinnerBadge = () => {
+        Object.values(cardsById).forEach((card) => card.classList.remove('winner'));
+        let best = null;
+        speakers.forEach((speaker, index) => {
+          const arr = ratings[speaker.id] || [];
+          const count = arr.length;
+          if (count > 3) {
+            const average = arr.reduce((sum, val) => sum + val, 0) / count;
+            if (!best || average > best.average || (average === best.average && count > best.count)) {
+              best = { speakerId: speaker.id, average, count, index };
+            }
+          }
+        });
+        if (best && cardsById[best.speakerId]) {
+          cardsById[best.speakerId].classList.add('winner');
+        }
+      };
+
+      const renderCards = () => {
+        if (!speakersGrid) return;
+        speakersGrid.innerHTML = '';
+        Object.keys(cardsById).forEach((key) => delete cardsById[key]);
+        speakers.forEach((speaker) => {
+          const clone = template.content.firstElementChild.cloneNode(true);
+          clone.dataset.speakerId = speaker.id;
+          const nameEl = clone.querySelector('.speaker-name');
+          const topicEl = clone.querySelector('.speaker-topic');
+          if (nameEl) nameEl.textContent = speaker.name;
+          if (topicEl) topicEl.textContent = speaker.topic ? `Topic: ${speaker.topic}` : 'Topic not provided';
+          cardsById[speaker.id] = clone;
+          speakersGrid.appendChild(clone);
+        });
+        Object.keys(ratings).forEach((key) => {
+          if (!cardsById[key]) {
+            delete ratings[key];
+          }
+        });
+        speakers.forEach((speaker) => updateCardStats(speaker.id));
+        persistCache();
+        updateWinnerBadge();
+      };
+
+      const updateCardStats = (speakerId) => {
+        const card = cardsById[speakerId];
+        if (!card) return;
+        const arr = ratings[speakerId] || [];
+        const count = arr.length;
+        const avg = count ? arr.reduce((sum, val) => sum + val, 0) / count : 0;
+        card.querySelector('.avg').textContent = count ? avg.toFixed(2) : '0.00';
+        card.querySelector('.votes').textContent = count === 1 ? '1 vote' : `${count} votes`;
+      };
+
+      const renderLeaderboard = () => {
+        if (!leaderboardSection || !leaderboardBody) return;
+        const rows = speakers.map((speaker) => {
+          const arr = ratings[speaker.id] || [];
+          const count = arr.length;
+          const average = count ? arr.reduce((sum, val) => sum + val, 0) / count : 0;
+          return { speaker, count, average };
+        }).filter((item) => item.count > 0);
+
+        if (!rows.length) {
+          leaderboardSection.hidden = true;
+          leaderboardBody.innerHTML = '';
+          return;
+        }
+
+        rows.sort((a, b) => {
+          if (b.average !== a.average) return b.average - a.average;
+          if (b.count !== a.count) return b.count - a.count;
+          return a.speaker.name.localeCompare(b.speaker.name);
+        });
+
+        leaderboardSection.hidden = false;
+        leaderboardBody.innerHTML = '';
+        rows.forEach((row, index) => {
+          const tr = document.createElement('tr');
+          const pos = document.createElement('td');
+          pos.textContent = String(index + 1);
+          const name = document.createElement('td');
+          name.textContent = row.speaker.name;
+          const topic = document.createElement('td');
+          topic.textContent = row.speaker.topic || '—';
+          const avg = document.createElement('td');
+          avg.textContent = row.average.toFixed(2);
+          const votes = document.createElement('td');
+          votes.textContent = row.count === 1 ? '1 vote' : `${row.count} votes`;
+          tr.append(pos, name, topic, avg, votes);
+          leaderboardBody.appendChild(tr);
+        });
+      };
+
+      const applyRatingEntry = (entry) => {
+        if (!entry || typeof entry !== 'object') return;
+        const speakerId = entry.speakerId ?? entry.speaker_id;
+        if (!speakerId) return;
+        const numericRating = Number(entry.rating ?? entry.value);
+        if (!Number.isFinite(numericRating) || numericRating < 1 || numericRating > 5) return;
+
+        const localKey = entry.uid || entry.id || null;
+        if (localKey) {
+          if (processedLocalIds.has(localKey)) return;
+          processedLocalIds.add(localKey);
+          scheduleHydrate(800);
+        }
+
+        const remoteKey = entry.submitted_at ? `${speakerId}|${entry.submitted_at}` : null;
+        if (remoteKey) {
+          if (processedRemoteIds.has(remoteKey)) return;
+          processedRemoteIds.add(remoteKey);
+        }
+
+        const arr = ensureArray(speakerId);
+        arr.push(numericRating);
+        updateCardStats(speakerId);
+        persistCache();
+        renderLeaderboard();
+        updateWinnerBadge();
+      };
+
+      const ingestRatingMessage = (message) => {
+        if (!message) return;
+        if (Array.isArray(message)) {
+          message.forEach(ingestRatingMessage);
+          return;
+        }
+        if (Array.isArray(message.entries)) {
+          message.entries.forEach(ingestRatingMessage);
+          scheduleHydrate(600);
+          return;
+        }
+        if (message.payload) {
+          ingestRatingMessage(message.payload);
+          return;
+        }
+        if (message.entry) {
+          ingestRatingMessage(message.entry);
+          return;
+        }
+        applyRatingEntry(message);
+      };
+
+      const mapSpeakerRow = (row) => ({
+        id: row.speaker_id || row.id,
+        name: row.name || 'Speaker',
+        topic: row.topic || ''
+      });
+
+      const fetchSpeakersFromSupabase = async () => {
+        if (!supabase) return null;
+        try {
+          const { data, error } = await supabase
+            .from('speakers')
+            .select('speaker_id,name,topic')
+            .eq('session_id', sessionId);
+          if (error) throw error;
+          if (!data || !data.length) return [];
+          const mapped = data.map(mapSpeakerRow);
+          mapped.forEach((entry, index) => fallbackOrder.set(entry.id, index));
+          return mapped;
+        } catch (err) {
+          console.warn('Unable to fetch speakers from Supabase', err);
+          return null;
+        }
+      };
+
+      const refreshSpeakersFromRemote = async () => {
+        const remote = await fetchSpeakersFromSupabase();
+        if (remote === null) return;
+        if (!remote.length) {
+          return;
+        }
+        remote.forEach((entry) => ensureArray(entry.id));
+        Object.keys(ratings).forEach((key) => {
+          if (!remote.some((speaker) => speaker.id === key)) {
+            delete ratings[key];
+          }
+        });
+        speakers = remote;
+        renderCards();
+        updateRatingDestination();
+        speakers.forEach((speaker) => updateCardStats(speaker.id));
+        renderLeaderboard();
+        persistCache();
+      };
+
+      const hydrateSupabaseRatings = async () => {
+        if (!supabase) return;
+        try {
+          const { data, error } = await supabase
+            .from('ratings')
+            .select('speaker_id,rating,submitted_at')
+            .eq('session_id', sessionId);
+          if (error) throw error;
+          if (!Array.isArray(data)) return;
+          if (!data.length) {
+            return;
+          }
+          Object.keys(ratings).forEach((key) => { ratings[key] = []; });
+          processedRemoteIds.clear();
+          speakers.forEach((speaker) => updateCardStats(speaker.id));
+          data.forEach((row) => {
+            applyRatingEntry({ speakerId: row.speaker_id, rating: row.rating, submitted_at: row.submitted_at });
+          });
+          persistCache();
+        } catch (err) {
+          console.warn('Unable to hydrate ratings from Supabase', err);
+        }
+      };
+
+      const subscribeToSupabase = () => {
+        if (!supabase) return;
+        realtimeChannel = supabase.channel(`dashboard-${sessionId}`)
+          .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'ratings',
+            filter: `session_id=eq.${sessionId}`
+          }, () => {
+            hydrateSupabaseRatings();
+          })
+          .on('postgres_changes', {
+            event: 'DELETE',
+            schema: 'public',
+            table: 'ratings',
+            filter: `session_id=eq.${sessionId}`
+          }, () => {
+            hydrateSupabaseRatings();
+          })
+          .on('postgres_changes', {
+            event: '*',
+            schema: 'public',
+            table: 'speakers',
+            filter: `session_id=eq.${sessionId}`
+          }, () => {
+            refreshSpeakersFromRemote();
+          })
+          .subscribe((status, err) => {
+            if (err) {
+              console.warn('Supabase realtime subscription error', err);
+            }
+            if (status === 'CHANNEL_ERROR') {
+              console.warn('Supabase realtime channel error');
+            }
+          });
+      };
+
+      const startRatingsPoll = () => {
+        if (!supabase) return;
+        if (ratingsPoll) clearInterval(ratingsPoll);
+        ratingsPoll = setInterval(() => {
+          hydrateSupabaseRatings();
+        }, RATINGS_POLL_INTERVAL);
+      };
+
+      window.addEventListener('storage', (event) => {
+        if (event.key === SNAPSHOT_STORAGE_KEY) {
+          if (!event.newValue) {
+            applyRosterUpdate([]);
+            return;
+          }
+          try {
+            const parsed = JSON.parse(event.newValue);
+            if (parsed && parsed.sessionId === sessionId) {
+              applyRosterUpdate(parsed.roster || []);
+            }
+          } catch (err) {
+            console.warn('Invalid roster snapshot payload', err);
+          }
+          return;
+        }
+        if (event.key === signalKey && event.newValue) {
+          try {
+            const payload = JSON.parse(event.newValue);
+            ingestRatingMessage(payload);
+          } catch (err) {
+            console.warn('Invalid rating payload', err);
+          }
+        }
+      });
+
+      window.addEventListener('message', (event) => {
+        const data = event?.data;
+        if (!data) return;
+        if (data.sessionId && data.sessionId !== sessionId) return;
+        if (data.type && data.type !== 'tm-rating' && data.type !== 'tm-rating-batch') return;
+        if (!data.payload && !data.entries && !data.speakerId && !data.speaker_id) return;
+        ingestRatingMessage(data);
+      });
+
+      const ratingsChannel = window.BroadcastChannel ? new BroadcastChannel('tm_ratings_channel') : null;
+
+      let lastSignalValue = null;
+      const processSignalValue = () => {
+        try {
+          const current = localStorage.getItem(signalKey);
+          if (!current || current === lastSignalValue) return;
+          lastSignalValue = current;
+          const payload = JSON.parse(current);
+          ingestRatingMessage(payload);
+        } catch (err) {
+          console.warn('Failed to process stored rating payload', err);
+        }
+      };
+
+      processSignalValue();
+      const signalPoll = setInterval(processSignalValue, 1500);
+
+      ratingsChannel?.addEventListener('message', (event) => {
+        const data = event?.data;
+        if (!data) return;
+        if (data.sessionId && data.sessionId !== sessionId) return;
+        ingestRatingMessage(data);
+      });
+
+      loadCache();
+
+      const initialize = async () => {
+        const snapshotRoster = readRosterSnapshot();
+        if (snapshotRoster !== null) {
+          applyRosterUpdate(snapshotRoster);
+        } else {
+          applyRosterUpdate(speakers);
+        }
+
+        if (supabase) {
+          const remote = await fetchSpeakersFromSupabase();
+          if (Array.isArray(remote) && remote.length) {
+            applyRosterUpdate(remote);
+          }
+        }
+
+        if (!speakers.length) {
+          return;
+        }
+
+        if (supabase) {
+          await hydrateSupabaseRatings();
+          subscribeToSupabase();
+          startRatingsPoll();
+        }
+      };
+
+      initialize();
+
+      window.addEventListener('beforeunload', () => {
+        if (ratingsChannel) {
+          try { ratingsChannel.close(); } catch (_) {}
+        }
+        if (realtimeChannel) {
+          try { realtimeChannel.unsubscribe(); } catch (_) {}
+        }
+        clearInterval(signalPoll);
+        if (ratingsPoll) {
+          clearInterval(ratingsPoll);
+          ratingsPoll = null;
+        }
+      });
+    })();
+  </script>
+
+</body>
+</html>

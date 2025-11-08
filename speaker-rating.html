@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rate Speaker</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+      background: #f7f9fc;
+      color: #111;
+    }
+
+    body {
+      margin: 0;
+      padding: 32px 18px;
+      background: linear-gradient(160deg, #f7f9fc 0%, #ebf1ff 100%);
+    }
+
+    main {
+      max-width: 520px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 22px;
+      padding: 28px;
+      box-shadow: 0 18px 42px rgba(15, 23, 42, 0.12);
+      border: 1px solid rgba(15, 23, 42, 0.05);
+      text-align: center;
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: clamp(1.6rem, 5vw, 2.4rem);
+      color: #0d1b3d;
+    }
+
+    .speaker-topic {
+      margin: 8px 0 20px;
+      font-size: 1rem;
+      opacity: 0.75;
+    }
+
+    .stars {
+      display: inline-flex;
+      gap: 10px;
+      font-size: 2.4rem;
+      cursor: pointer;
+    }
+
+    .star {
+      color: #d0d5e0;
+      transition: transform 0.15s ease, color 0.2s ease;
+      user-select: none;
+    }
+
+    .star.selected,
+    .star.hover {
+      color: #f7b351;
+      transform: translateY(-2px);
+    }
+
+    button {
+      margin-top: 24px;
+      padding: 12px 22px;
+      border-radius: 999px;
+      border: none;
+      background: linear-gradient(135deg, #0d6efd, #6610f2);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.2s ease;
+    }
+
+    button:disabled {
+      background: #cdd5f5;
+      cursor: not-allowed;
+    }
+
+    button:not(:disabled):hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 24px rgba(13, 110, 253, 0.28);
+    }
+
+    .message {
+      margin-top: 18px;
+      font-size: 0.95rem;
+      min-height: 1.3rem;
+    }
+
+    .success {
+      color: #17683b;
+    }
+
+    .error {
+      color: #c62828;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 0.85rem;
+      opacity: 0.7;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1 id="speakerName">Loading speaker...</h1>
+    <p class="speaker-topic" id="speakerTopic"></p>
+
+    <div class="stars" id="stars" role="radiogroup" aria-label="Star rating"></div>
+
+    <button id="submitBtn" type="button">Submit Rating</button>
+    <div class="message" id="message"></div>
+  </main>
+  <footer>Powered by the ToastMasters Timer toolkit.</footer>
+
+  <script>
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      const sessionId = params.get('session');
+      const speakerParam = params.get('speaker');
+
+      const decodePayload = (value) => {
+        try {
+          const base64 = decodeURIComponent(value);
+          const decoded = window.atob(base64);
+          const json = decodeURIComponent(escape(decoded));
+          return JSON.parse(json);
+        } catch (err) {
+          console.error('Failed to decode speaker payload', err);
+          return null;
+        }
+      };
+
+      if (!sessionId || !speakerParam) {
+        document.body.innerHTML = '<main><h1>Missing rating information</h1><p>Use the QR code from the ratings dashboard to open this page.</p></main>';
+        return;
+      }
+
+      const speaker = decodePayload(speakerParam);
+      if (!speaker || !speaker.id) {
+        document.body.innerHTML = '<main><h1>Invalid speaker data</h1><p>The link appears to be malformed.</p></main>';
+        return;
+      }
+
+      const starContainer = document.getElementById('stars');
+      const submitBtn = document.getElementById('submitBtn');
+      const messageEl = document.getElementById('message');
+      const speakerNameEl = document.getElementById('speakerName');
+      const speakerTopicEl = document.getElementById('speakerTopic');
+
+      speakerNameEl.textContent = speaker.name || 'Unnamed Speaker';
+      speakerTopicEl.textContent = speaker.topic ? `Topic: ${speaker.topic}` : 'Topic not provided';
+
+      const stars = [];
+      let selected = 0;
+
+      const updateStars = (hoverIndex = 0) => {
+        stars.forEach((star, index) => {
+          star.classList.toggle('selected', index < selected);
+          star.classList.toggle('hover', hoverIndex && index < hoverIndex);
+        });
+      };
+
+      for (let i = 1; i <= 5; i++) {
+        const span = document.createElement('span');
+        span.textContent = '★';
+        span.className = 'star';
+        span.setAttribute('role', 'radio');
+        span.setAttribute('aria-checked', 'false');
+        span.setAttribute('tabindex', '0');
+        span.dataset.value = String(i);
+
+        span.addEventListener('mouseenter', () => updateStars(i));
+        span.addEventListener('mouseleave', () => updateStars());
+        span.addEventListener('click', () => {
+          selected = i;
+          updateStars();
+        });
+        span.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            selected = i;
+            updateStars();
+          }
+        });
+
+        starContainer.appendChild(span);
+        stars.push(span);
+      }
+
+      const broadcastChannel = window.BroadcastChannel ? new BroadcastChannel('tm_ratings_channel') : null;
+
+      const signalKey = `tm_rating_signal_${sessionId}`;
+
+      const showMessage = (text, type) => {
+        messageEl.textContent = text;
+        messageEl.className = `message ${type}`;
+      };
+
+      submitBtn.addEventListener('click', () => {
+        if (!selected) {
+          showMessage('Please select a rating before submitting.', 'error');
+          return;
+        }
+
+        const payload = {
+          speakerId: speaker.id,
+          rating: selected,
+          timestamp: Date.now()
+        };
+
+        try {
+          localStorage.setItem(signalKey, JSON.stringify(payload));
+          const message = { type: 'tm-rating', sessionId, payload };
+          try {
+            if (window.opener && !window.opener.closed) {
+              window.opener.postMessage(message, '*');
+            }
+            window.postMessage(message, '*');
+          } catch (err) {
+            console.warn('Unable to broadcast rating via postMessage', err);
+          }
+          try {
+            broadcastChannel?.postMessage(message);
+          } catch (err) {
+            console.warn('BroadcastChannel failed', err);
+          }
+          showMessage('Thank you! Your rating has been recorded.', 'success');
+          submitBtn.disabled = true;
+          stars.forEach((star) => star.setAttribute('aria-checked', String(star.dataset.value <= selected)));
+          setTimeout(() => {
+            try { broadcastChannel?.close(); } catch (_) {}
+            window.close();
+          }, 600);
+        } catch (err) {
+          console.error(err);
+          showMessage('Unable to store your rating in this browser.', 'error');
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
