@@ -109,6 +109,3 @@ If you want full control (or don’t want the hosted demo wiped out underneath y
 ## License
 
 This project is licensed under the Apache License 2.0. See [`LICENSE`](LICENSE) for details.
-
----
-Created by [Tushar Vartak](https://www.linkedin.com/in/tusharvartak/).
