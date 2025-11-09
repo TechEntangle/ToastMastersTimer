@@ -15,7 +15,6 @@ A modern Toastmasters meeting toolkit that keeps time, captures speaker rosters,
 - **Ratings Dashboard** – A Bootstrap dashboard that shows the roster, a live-updating leaderboard, and a QR code pointing to the voting form.
 - **QR-Based Rating Form** – Multi-speaker rating page supports remote attendees; votes appear instantly on the dashboard thanks to Supabase realtime plus a 3-second polling fallback.
 - **Keyboard & Audio Enhancements** – Space toggles start/pause, “B” plays the cue ding, and the built-in audio is preloaded for consistent alerts.
-- **LinkedIn Footer Credit** – Every page includes a subtle credit linking to Tushar Vartak’s profile.
 
 ## Pages in This Repo
 
