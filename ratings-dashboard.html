@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; connect-src 'self' https://geaqvvbkwgfoxiakzums.supabase.co https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data:;">
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; connect-src 'self' https://geaqvvbkwgfoxiakzums.supabase.co wss://geaqvvbkwgfoxiakzums.supabase.co https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data:;">
   <title>ToastMasters Ratings Dashboard</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" crossorigin="anonymous">
   <style>
@@ -317,7 +317,7 @@
       let realtimeChannel = null;
       let ratingsPoll = null;
       let lastRosterSignature = null;
-      const RATINGS_POLL_INTERVAL = 5000;
+      const RATINGS_POLL_INTERVAL = 3000;
 
       const signalKey = `tm_rating_signal_${sessionId}`;
       const cacheKey = `tm_ratings_cache_${sessionId}`;
@@ -830,6 +830,7 @@
           }
         });
         speakers = remote;
+        processedRemoteIds.clear();
         renderCards();
         updateRatingDestination();
         speakers.forEach((speaker) => updateCardStats(speaker.id));
@@ -843,18 +844,23 @@
           const { data, error } = await supabase
             .from('ratings')
             .select('speaker_id,rating,submitted_at')
-            .eq('session_id', sessionId);
+            .eq('session_id', sessionId)
+            .order('submitted_at', { ascending: true });
           if (error) throw error;
-          if (!Array.isArray(data)) return;
-          if (!data.length) {
-            return;
-          }
+          const rows = Array.isArray(data) ? data : [];
+          const hasChanges = rows.some((row) => {
+            const key = `${row.speaker_id}|${row.submitted_at}`;
+            if (processedRemoteIds.has(key)) return false;
+            processedRemoteIds.add(key);
+            return true;
+          });
+          if (!hasChanges && ratingsPoll) return;
           Object.keys(ratings).forEach((key) => { ratings[key] = []; });
-          processedRemoteIds.clear();
           speakers.forEach((speaker) => updateCardStats(speaker.id));
-          data.forEach((row) => {
+          rows.forEach((row) => {
             applyRatingEntry({ speakerId: row.speaker_id, rating: row.rating, submitted_at: row.submitted_at });
           });
+          renderLeaderboard();
           persistCache();
         } catch (err) {
           console.warn('Unable to hydrate ratings from Supabase', err);
@@ -869,7 +875,9 @@
             schema: 'public',
             table: 'ratings',
             filter: `session_id=eq.${sessionId}`
-          }, () => {
+          }, (payload) => {
+            const key = `${payload.new.speaker_id}|${payload.new.submitted_at}`;
+            processedRemoteIds.add(key);
             hydrateSupabaseRatings();
           })
           .on('postgres_changes', {
@@ -901,9 +909,14 @@
       const startRatingsPoll = () => {
         if (!supabase) return;
         if (ratingsPoll) clearInterval(ratingsPoll);
-        ratingsPoll = setInterval(() => {
-          hydrateSupabaseRatings();
+        ratingsPoll = setInterval(async () => {
+          await refreshSpeakersFromRemote();
+          await hydrateSupabaseRatings();
         }, RATINGS_POLL_INTERVAL);
+        (async () => {
+          await refreshSpeakersFromRemote();
+          await hydrateSupabaseRatings();
+        })();
       };
 
       window.addEventListener('storage', (event) => {
@@ -966,7 +979,11 @@
         ingestRatingMessage(data);
       });
 
-      loadCache();
+      if (!supabase) {
+        loadCache();
+      } else {
+        Object.keys(ratings).forEach((key) => { ratings[key] = []; });
+      }
 
       const initialize = async () => {
         const snapshotRoster = readRosterSnapshot();

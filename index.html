@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; connect-src 'self' https://geaqvvbkwgfoxiakzums.supabase.co https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data:;">
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; connect-src 'self' https://geaqvvbkwgfoxiakzums.supabase.co wss://geaqvvbkwgfoxiakzums.supabase.co https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data:;">
   <title>ToastMasters Timer</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" crossorigin="anonymous">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -238,7 +238,7 @@
       </div>
     </header>
 
-    <div id="display-bar" class="row g-3 mb-4">
+    <div id="display-bar" class="row g-3 mb-4" style="display:none;">
       <div class="col-md-6">
         <div class="info-card h-100">
           <div class="info-label">Speaker</div>
@@ -253,7 +253,7 @@
       </div>
     </div>
 
-    <div class="card timer-shell border-0 mb-4">
+    <div class="card timer-shell border-0 mb-4" style="display:none;">
       <div class="card-body text-center">
         <div id="timer-display">00:00</div>
         <div id="grace-indicator" role="status" aria-live="polite" aria-hidden="true">
@@ -322,8 +322,8 @@
           </div>
         </div>
 
-        <div class="button-bar primary-actions mt-4 pt-3 border-top">
-          <button id="startPauseBtn" type="button" class="btn btn-success btn-lg">
+        <div class="d-flex flex-wrap gap-3 justify-content-center mt-4 pt-3 border-top">
+          <button id="startPauseBtn" type="button" class="btn btn-success px-4">
             <span class="btn-icon" aria-hidden="true">▶️</span>
             <span class="btn-label">Start</span>
           </button>
@@ -339,27 +339,19 @@
             <span class="btn-icon" aria-hidden="true">⬇️</span>
             <span class="btn-label">Download CSV</span>
           </button>
-        </div>
-
-        <div class="button-bar secondary-actions mt-3">
-          <button id="ratingsDashboardBtn" type="button" class="btn btn-outline-dark" disabled>
-            <span class="btn-icon" aria-hidden="true">📊</span>
-            <span class="btn-label">View Ratings Dashboard</span>
-          </button>
-        </div>
-
-        <div class="d-flex flex-wrap gap-2 align-items-center justify-content-center text-muted small mt-3">
-          <span class="fw-semibold">Cue sound:</span>
-          <span>Built-in sound</span>
-          <button id="testSoundBtn" type="button" class="btn btn-outline-primary btn-sm">
+          <button id="testSoundBtn" type="button" class="btn btn-outline-primary">
             <span class="btn-icon" aria-hidden="true">🔊</span>
             <span class="btn-label">Test Sound</span>
+          </button>
+          <button id="ratingsDashboardBtn" type="button" class="btn btn-dark" disabled style="display:none;">
+            <span class="btn-icon" aria-hidden="true">📊</span>
+            <span class="btn-label">Ratings Dashboard</span>
           </button>
         </div>
       </div>
     </div>
 
-    <section id="log-section" class="card shadow-sm mb-5">
+    <section id="log-section" class="card shadow-sm mb-5" style="display:none;">
       <div class="card-body">
         <h2 class="h4 text-center mb-3">Timer Log</h2>
         <div class="table-responsive">
@@ -430,6 +422,7 @@
     ];
 
     const logRecords = [];
+    updateLogVisibility();
     const GRACE_SECONDS = 30;
     const RATINGS_SESSION_STORAGE_KEY = 'tmTimer.ratings.sessionId';
     const RATINGS_SNAPSHOT_STORAGE_KEY = 'tmTimer.ratings.snapshot';
@@ -479,6 +472,9 @@
       numericInputs.forEach((input) => { if (input) input.disabled = state; });
     }
 
+        const displayBar = document.getElementById('display-bar');
+    const timerShell = document.querySelector('#app .timer-shell');
+
     function setMetaHidden(shouldHide) {
       if (!metaPanel) return;
       metaPanel.style.display = shouldHide ? 'none' : '';
@@ -493,11 +489,21 @@
       if (!runningHint) return;
       if (shouldShow) {
         runningHint.style.display = 'block';
-        runningHint.textContent = 'Press Spacebar to pause and show control buttons.';
+        runningHint.textContent = 'Press Spacebar to pause and show control buttons. Press "B" for ding sound.';
       } else {
         runningHint.style.display = 'none';
         runningHint.textContent = '';
       }
+    }
+
+    function setDisplayHidden(shouldHide) {
+      if (displayBar) displayBar.style.display = shouldHide ? 'none' : '';
+      if (timerShell) timerShell.style.display = shouldHide ? 'none' : '';
+    }
+
+    function updateLogVisibility() {
+      if (!logSection) return;
+      logSection.style.display = logRecords.length ? '' : 'none';
     }
 
     function ensureSupabaseSessionInitialized(sessionId) {
@@ -616,6 +622,7 @@
       const hasRoster = buildRosterSnapshot().length > 0;
       ratingsDashboardBtn.disabled = !hasRoster;
       ratingsDashboardBtn.setAttribute('aria-disabled', hasRoster ? 'false' : 'true');
+      ratingsDashboardBtn.style.display = hasRoster ? '' : 'none';
     }
 
     applyPreset(presetSelect.value);
@@ -793,6 +800,7 @@
         }
         setMetaHidden(true);
         setControlsHidden(true);
+        setDisplayHidden(false);
         setRunningHint(true);
         timerInterval = setInterval(updateTimer, 1000);
       } else {
@@ -802,6 +810,7 @@
         timerInterval = null;
         setMetaHidden(false);
         setControlsHidden(false);
+        setDisplayHidden(true);
         setRunningHint(false);
       }
     }
@@ -822,6 +831,7 @@
       if (startPauseLabel) startPauseLabel.textContent = 'Start';
       setMetaHidden(false);
       setControlsHidden(false);
+      setDisplayHidden(true);
       setRunningHint(false);
       speakerInput.value = '';
       topicInput.value = '';
@@ -837,6 +847,7 @@
 
       const record = { id: generateSpeakerId(), name, topic, totalTime, status: status.label };
       logRecords.push(record);
+      updateLogVisibility();
       appendLogRow({ ...record, statusLabel: status.label, statusClass: status.className, statusIcon: status.icon });
       persistRatingsSnapshot();
 
@@ -853,6 +864,7 @@
       if (startPauseLabel) startPauseLabel.textContent = 'Start';
       setMetaHidden(false);
       setControlsHidden(false);
+      setDisplayHidden(true);
       setRunningHint(false);
       speakerInput.value = '';
       topicInput.value = '';
