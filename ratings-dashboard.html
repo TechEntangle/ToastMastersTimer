@@ -49,8 +49,17 @@
       display: flex;
       flex-wrap: wrap;
       gap: 0.75rem;
-      justify-content: center;
-      margin-top: 1.25rem;
+      justify-content: flex-start;
+    }
+
+    .share-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .share-stack .share-actions {
+      justify-content: flex-start;
     }
 
     .btn-gradient {
@@ -72,9 +81,9 @@
 
     #copy-status {
       min-height: 1.2rem;
-      text-align: center;
+      text-align: left;
       font-size: 0.9rem;
-      margin-top: 0.75rem;
+      margin-top: 0;
       color: #17683b;
     }
 
@@ -82,105 +91,14 @@
       color: #c62828;
     }
 
-    #qr-modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.55);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      z-index: 1000;
-    }
-
-    #qr-modal.active {
-      display: flex;
-    }
-
-    #qr-modal .modal-content {
-      background: #fff;
-      border-radius: 18px;
-      padding: 24px 28px;
-      max-width: 420px;
+    .qr-inline img {
+      max-width: 180px;
       width: 100%;
-      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.25);
-      text-align: center;
-      position: relative;
-    }
-
-    #qr-modal .modal-actions {
-      margin-top: 18px;
-      display: flex;
-      justify-content: center;
-    }
-
-    #qr-code-output img {
-      max-width: 240px;
       height: auto;
     }
 
-    #qr-close-btn {
-      border: none;
-      border-radius: 999px;
-      padding: 0.6rem 1.6rem;
-      font-weight: 600;
-      background: #0d6efd;
-      color: #fff;
-      cursor: pointer;
-    }
-
-    #qr-close-btn:hover {
-      background: #0b5ed7;
-    }
-
-    #speakersGrid .speaker-card {
-      background: #fff;
-      border-radius: 1rem;
-      box-shadow: 0 14px 30px rgba(15, 23, 42, 0.12);
-      border: 1px solid rgba(15, 23, 42, 0.05);
-      padding: 1.2rem 1.35rem;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      gap: 0.85rem;
-    }
-
-    .speaker-card-wrapper.winner .speaker-card {
-      border-color: rgba(13, 110, 253, 0.45);
-      box-shadow: 0 18px 36px rgba(13, 110, 253, 0.18);
-    }
-
-    .speaker-card-wrapper.winner .winner-badge {
-      display: inline-flex;
-      opacity: 1;
-    }
-
-    .winner-badge {
-      display: none;
-      font-size: 1.8rem;
-      transform: rotate(-6deg);
-      filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.25));
-    }
-
-    .speaker-topic {
-      margin: 0;
-      color: rgba(15, 23, 42, 0.7);
-    }
-
-    .stats {
-      display: flex;
-      align-items: baseline;
-      gap: 0.75rem;
-    }
-
-    .stats strong {
-      font-size: 1.75rem;
-      font-weight: 700;
-    }
-
-    .stats span {
-      font-size: 0.95rem;
-      color: #6c757d;
+    .qr-inline {
+      border: 1px solid rgba(15, 23, 42, 0.08);
     }
 
     .empty-state {
@@ -217,39 +135,32 @@
 <body>
   <div class="container-lg py-4">
     <header class="mb-4">
-      <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+      <div class="d-flex flex-column gap-4">
         <div>
           <h1 class="fw-semibold mb-1">ToastMasters Ratings Dashboard</h1>
-          <p class="mb-0">Live standings update as audience feedback rolls in.</p>
+          <p class="mb-0 text-muted">Live standings update as audience feedback rolls in.</p>
         </div>
-        <span class="session-pill">Session <span class="fw-semibold" id="sessionIdLabel">—</span></span>
+        <div class="row g-4 align-items-stretch">
+          <div class="col-lg-4">
+            <div class="qr-inline text-center p-3 p-md-4 bg-white rounded-4 shadow-sm border h-100">
+              <p class="mb-2 text-muted small" id="qr-inline-label">Scan to rate all speakers</p>
+              <div id="qr-inline-output"></div>
+            </div>
+          </div>
+          <div class="col-lg-8">
+            <div class="share-stack bg-white rounded-4 shadow-sm border p-3 p-md-4 h-100 d-flex flex-column gap-3">
+              <span class="session-pill align-self-start">Session <span class="fw-semibold" id="sessionIdLabel">—</span></span>
+              <div class="share-actions d-flex flex-wrap gap-2">
+                <button type="button" class="btn btn-gradient px-4" id="group-rating-button" disabled>Open audience rating form</button>
+                <button type="button" class="btn btn-outline-secondary px-4" id="copy-rating-link" disabled>Copy rating link</button>
+              </div>
+              <p class="text-muted small mb-0">Share the audience rating link so attendees can vote from their own device.</p>
+              <span id="copy-status" class="copy-status align-self-start" aria-live="polite"></span>
+            </div>
+          </div>
+        </div>
       </div>
     </header>
-
-    <section id="share-link-panel" class="card shadow-sm mb-4">
-      <div class="card-body">
-        <div class="text-muted small text-center text-lg-start mb-3">Share the link or QR code so attendees can rate every speaker from their own device.</div>
-        <div class="share-actions">
-          <button type="button" class="btn btn-gradient px-4" id="group-rating-button" disabled>Open audience rating form</button>
-          <button type="button" class="btn btn-outline-secondary px-4" id="copy-rating-link" disabled>Copy rating link</button>
-          <button type="button" class="btn btn-outline-dark px-4" id="show-qr-button" disabled>Show QR Code</button>
-        </div>
-        <span id="copy-status" class="copy-status" aria-live="polite"></span>
-      </div>
-    </section>
-
-    <div id="qr-modal" role="dialog" aria-modal="true" aria-labelledby="qr-modal-title" aria-hidden="true">
-      <div class="modal-content">
-        <h2 id="qr-modal-title" class="h5 mb-2">Audience Rating QR Code</h2>
-        <p class="text-muted mb-3">Scan to open the audience rating form.</p>
-        <div id="qr-code-output" role="img" aria-label="QR code for the audience rating form" style="display:flex;justify-content:center;margin-bottom:16px;"></div>
-        <div class="modal-actions">
-          <button type="button" id="qr-close-btn" class="btn">Close</button>
-        </div>
-      </div>
-    </div>
-
-    <section id="speakersGrid" class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4 mb-4"></section>
 
     <section class="card shadow-sm mb-4" id="leaderboardSection" hidden>
       <div class="card-body">
@@ -271,24 +182,7 @@
       </div>
     </section>
 
-    <p class="note">Refresh clears the local cache of ratings. Keep this page open on the main display during the meeting for automatic updates.</p>
-  </div>
 
-  <template id="speaker-card-template">
-    <div class="col speaker-card-wrapper">
-      <article class="speaker-card">
-        <div class="d-flex align-items-center justify-content-between gap-2">
-          <h2 class="speaker-name mb-0 h5"></h2>
-          <span class="winner-badge" aria-hidden="true">👑</span>
-        </div>
-        <p class="speaker-topic"></p>
-        <div class="stats">
-          <strong class="avg">0.00</strong>
-          <span class="votes">0 votes</span>
-        </div>
-      </article>
-    </div>
-  </template>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
   <script src="qrcodegen.js"></script>
@@ -322,24 +216,20 @@
       const signalKey = `tm_rating_signal_${sessionId}`;
       const cacheKey = `tm_ratings_cache_${sessionId}`;
       const ratings = Object.create(null);
-      const cardsById = Object.create(null);
       const processedLocalIds = new Set();
       const processedRemoteIds = new Set();
       let hydrateDebounce = null;
 
-      const speakersGrid = document.getElementById('speakersGrid');
-      const template = document.getElementById('speaker-card-template');
       const leaderboardSection = document.getElementById('leaderboardSection');
       const leaderboardBody = document.getElementById('leaderboardBody');
       const groupRatingButton = document.getElementById('group-rating-button');
 
       const copyLinkBtn = document.getElementById('copy-rating-link');
       const copyStatusEl = document.getElementById('copy-status');
-      const showQrBtn = document.getElementById('show-qr-button');
-      const qrModal = document.getElementById('qr-modal');
-      const qrCodeOutput = document.getElementById('qr-code-output');
-      const qrCloseBtn = document.getElementById('qr-close-btn');
+      const qrInlineOutput = document.getElementById('qr-inline-output');
+      const qrInlineLabel = document.getElementById('qr-inline-label');
       const sessionIdLabel = document.getElementById('sessionIdLabel');
+      const defaultQrLabel = qrInlineLabel?.textContent || 'Scan to rate all speakers';
 
       if (sessionIdLabel) {
         sessionIdLabel.textContent = sessionId;
@@ -402,16 +292,19 @@
           copyLinkBtn.disabled = !enabled;
           if (!enabled) delete copyLinkBtn.dataset.url;
         }
-        if (showQrBtn) {
-          showQrBtn.disabled = !enabled;
-          if (!enabled) delete showQrBtn.dataset.url;
+        if (!enabled) {
+          if (qrInlineOutput) qrInlineOutput.innerHTML = '';
+          if (qrInlineLabel) {
+            qrInlineLabel.textContent = 'Awaiting roster for QR code';
+            qrInlineLabel.classList.add('text-muted');
+          }
+        } else if (qrInlineLabel) {
+          qrInlineLabel.textContent = defaultQrLabel;
+          qrInlineLabel.classList.remove('text-muted');
         }
       };
 
       function renderEmptyState() {
-        if (!speakersGrid) return;
-        speakersGrid.innerHTML = '<div class="col-12"><div class="empty-state">No speakers are available for rating yet.</div></div>';
-        Object.keys(cardsById).forEach((key) => delete cardsById[key]);
         toggleShareButtons(false);
         latestRatingUrl = '';
         if (leaderboardSection) {
@@ -442,11 +335,8 @@
           }
         });
         speakers.forEach((speaker) => ensureArray(speaker.id));
-        renderCards();
         updateRatingDestination();
-        speakers.forEach((speaker) => updateCardStats(speaker.id));
         renderLeaderboard();
-        updateWinnerBadge();
         persistCache();
         return speakers.length;
       }
@@ -482,24 +372,25 @@
           copyLinkBtn.disabled = false;
           copyLinkBtn.dataset.url = ratingUrl;
         }
-        if (showQrBtn) {
-          showQrBtn.disabled = false;
-          showQrBtn.dataset.url = ratingUrl;
-        }
+        renderInlineQr(ratingUrl);
         return ratingUrl;
       };
 
-      const ensureQrCodeInModal = () => {
-        const ratingUrl = latestRatingUrl || updateRatingDestination();
-        if (!ratingUrl || !qrCodeOutput) return;
-        qrCodeOutput.innerHTML = '';
+      const renderInlineQr = (ratingUrl = latestRatingUrl) => {
+        if (!qrInlineOutput) return;
+        const url = ratingUrl || latestRatingUrl;
+        if (!url) {
+          qrInlineOutput.innerHTML = '';
+          return;
+        }
+        qrInlineOutput.innerHTML = '';
         try {
           if (!window.qrcodegen || !window.qrcodegen.QrCode) {
             throw new Error('QR library unavailable');
           }
-          const qr = window.qrcodegen.QrCode.encodeText(ratingUrl, window.qrcodegen.QrCode.Ecc.MEDIUM);
-          const scale = 8;
-          const border = 4;
+          const qr = window.qrcodegen.QrCode.encodeText(url, window.qrcodegen.QrCode.Ecc.MEDIUM);
+          const scale = 6;
+          const border = 3;
           const size = qr.size;
           const canvasSize = (size + border * 2) * scale;
           const canvas = document.createElement('canvas');
@@ -518,40 +409,26 @@
           }
           const img = document.createElement('img');
           img.src = canvas.toDataURL('image/png');
-          img.width = canvasSize;
-          img.height = canvasSize;
-          img.alt = 'QR code for the audience rating form';
-          qrCodeOutput.appendChild(img);
+          img.alt = 'QR code linking to the audience rating form';
+          qrInlineOutput.appendChild(img);
+          if (qrInlineLabel) {
+            qrInlineLabel.hidden = false;
+            qrInlineLabel.textContent = defaultQrLabel;
+            qrInlineLabel.classList.remove('text-muted');
+          }
         } catch (error) {
           console.error('Failed to render QR code', error);
           const fallback = document.createElement('div');
           fallback.className = 'qr-fallback';
           fallback.textContent = `QR code unavailable: ${error?.message || error}`;
-          qrCodeOutput.appendChild(fallback);
+          qrInlineOutput.appendChild(fallback);
+          if (qrInlineLabel) {
+            qrInlineLabel.hidden = false;
+            qrInlineLabel.textContent = 'QR code unavailable';
+            qrInlineLabel.classList.add('text-muted');
+          }
         }
       };
-
-      const openQrModal = () => {
-        if (!qrModal) return;
-        const ratingUrl = latestRatingUrl || updateRatingDestination();
-        if (!ratingUrl) {
-          alert('No speakers are available for rating yet.');
-          return;
-        }
-        qrModal.classList.add('active');
-        qrModal.setAttribute('aria-hidden', 'false');
-        ensureQrCodeInModal();
-        if (qrCloseBtn) {
-          qrCloseBtn.focus({ preventScroll: true });
-        }
-      };
-
-      const closeQrModal = () => {
-        if (!qrModal) return;
-        qrModal.classList.remove('active');
-        qrModal.setAttribute('aria-hidden', 'true');
-      };
-
       groupRatingButton?.addEventListener('click', () => {
         const ratingUrl = latestRatingUrl || updateRatingDestination();
         if (!ratingUrl) {
@@ -601,19 +478,6 @@
         }
       });
 
-      showQrBtn?.addEventListener('click', openQrModal);
-      qrCloseBtn?.addEventListener('click', closeQrModal);
-      qrModal?.addEventListener('click', (event) => {
-        if (event.target === qrModal) {
-          closeQrModal();
-        }
-      });
-      document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && qrModal?.classList.contains('active')) {
-          closeQrModal();
-        }
-      });
-
       const scheduleHydrate = (delay = 400) => {
         if (!supabase) return;
         if (hydrateDebounce) clearTimeout(hydrateDebounce);
@@ -646,58 +510,6 @@
         }
       };
 
-      const updateWinnerBadge = () => {
-        Object.values(cardsById).forEach((card) => card.classList.remove('winner'));
-        let best = null;
-        speakers.forEach((speaker, index) => {
-          const arr = ratings[speaker.id] || [];
-          const count = arr.length;
-          if (count > 3) {
-            const average = arr.reduce((sum, val) => sum + val, 0) / count;
-            if (!best || average > best.average || (average === best.average && count > best.count)) {
-              best = { speakerId: speaker.id, average, count, index };
-            }
-          }
-        });
-        if (best && cardsById[best.speakerId]) {
-          cardsById[best.speakerId].classList.add('winner');
-        }
-      };
-
-      const renderCards = () => {
-        if (!speakersGrid) return;
-        speakersGrid.innerHTML = '';
-        Object.keys(cardsById).forEach((key) => delete cardsById[key]);
-        speakers.forEach((speaker) => {
-          const clone = template.content.firstElementChild.cloneNode(true);
-          clone.dataset.speakerId = speaker.id;
-          const nameEl = clone.querySelector('.speaker-name');
-          const topicEl = clone.querySelector('.speaker-topic');
-          if (nameEl) nameEl.textContent = speaker.name;
-          if (topicEl) topicEl.textContent = speaker.topic ? `Topic: ${speaker.topic}` : 'Topic not provided';
-          cardsById[speaker.id] = clone;
-          speakersGrid.appendChild(clone);
-        });
-        Object.keys(ratings).forEach((key) => {
-          if (!cardsById[key]) {
-            delete ratings[key];
-          }
-        });
-        speakers.forEach((speaker) => updateCardStats(speaker.id));
-        persistCache();
-        updateWinnerBadge();
-      };
-
-      const updateCardStats = (speakerId) => {
-        const card = cardsById[speakerId];
-        if (!card) return;
-        const arr = ratings[speakerId] || [];
-        const count = arr.length;
-        const avg = count ? arr.reduce((sum, val) => sum + val, 0) / count : 0;
-        card.querySelector('.avg').textContent = count ? avg.toFixed(2) : '0.00';
-        card.querySelector('.votes').textContent = count === 1 ? '1 vote' : `${count} votes`;
-      };
-
       const renderLeaderboard = () => {
         if (!leaderboardSection || !leaderboardBody) return;
         const rows = speakers.map((speaker) => {
@@ -708,8 +520,15 @@
         }).filter((item) => item.count > 0);
 
         if (!rows.length) {
-          leaderboardSection.hidden = true;
+          leaderboardSection.hidden = false;
           leaderboardBody.innerHTML = '';
+          const tr = document.createElement('tr');
+          const td = document.createElement('td');
+          td.colSpan = 5;
+          td.className = 'text-center text-muted py-3';
+          td.textContent = 'No ratings submitted yet.';
+          tr.appendChild(td);
+          leaderboardBody.appendChild(tr);
           return;
         }
 
@@ -760,10 +579,8 @@
 
         const arr = ensureArray(speakerId);
         arr.push(numericRating);
-        updateCardStats(speakerId);
         persistCache();
         renderLeaderboard();
-        updateWinnerBadge();
       };
 
       const ingestRatingMessage = (message) => {
@@ -806,7 +623,8 @@
             .eq('session_id', sessionId)
             .order('order_index', { ascending: true, nullsFirst: true });
           if (error) throw error;
-          if (!data || !data.length) return [];
+          if (!data) return [];
+          if (!data.length) return [];
           const mapped = data.map(mapSpeakerRow);
           mapped.forEach((entry, index) => fallbackOrder.set(entry.id, index));
           return mapped;
@@ -817,10 +635,13 @@
       };
 
       const refreshSpeakersFromRemote = async () => {
+        const hadRoster = speakers.length > 0;
         const remote = await fetchSpeakersFromSupabase();
         if (remote === null) return;
         if (!remote.length) {
-          applyRosterUpdate([]);
+          if (!hadRoster) {
+            applyRosterUpdate([]);
+          }
           return;
         }
         remote.forEach((entry) => ensureArray(entry.id));
@@ -831,9 +652,7 @@
         });
         speakers = remote;
         processedRemoteIds.clear();
-        renderCards();
         updateRatingDestination();
-        speakers.forEach((speaker) => updateCardStats(speaker.id));
         renderLeaderboard();
         persistCache();
       };
@@ -856,7 +675,6 @@
           });
           if (!hasChanges && ratingsPoll) return;
           Object.keys(ratings).forEach((key) => { ratings[key] = []; });
-          speakers.forEach((speaker) => updateCardStats(speaker.id));
           rows.forEach((row) => {
             applyRatingEntry({ speakerId: row.speaker_id, rating: row.rating, submitted_at: row.submitted_at });
           });
@@ -1028,6 +846,12 @@
       });
     })();
   </script>
+
+    <footer class="py-3 text-muted small">
+      <div class="d-flex justify-content-center">
+        <span class="text-center">Created by <a href="https://www.linkedin.com/in/tusharvartak/" target="_blank" rel="noopener" class="text-decoration-none fw-semibold">Tushar Vartak</a></span>
+      </div>
+    </footer>
 
 </body>
 </html>
