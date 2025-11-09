@@ -3,181 +3,83 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; connect-src 'self' https://geaqvvbkwgfoxiakzums.supabase.co https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data:;">
   <title>ToastMasters Ratings Dashboard</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" crossorigin="anonymous">
   <style>
     :root {
       color-scheme: light;
-      font-family: "Inter", "Segoe UI", system-ui, sans-serif;
-      background: #f5f6fa;
-      color: #111;
     }
 
     body {
       margin: 0;
-      padding: 24px;
-      background: #f5f6fa;
+      background: #f5f7fb;
+      font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+      color: #212529;
     }
 
-    main {
-      max-width: 1100px;
-      margin: 0 auto;
+    header h1 {
+      margin-bottom: 0.25rem;
+      font-weight: 600;
     }
 
-    header {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      margin-bottom: 24px;
-      text-align: center;
+    header p {
+      margin-bottom: 0;
+      color: #6c757d;
     }
 
-    h1 {
-      margin: 0;
-      font-size: clamp(1.8rem, 4vw, 2.8rem);
-    }
-
-    .session-badge {
+    .session-pill {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 6px 14px;
+      gap: 0.4rem;
+      padding: 0.4rem 0.9rem;
       border-radius: 999px;
-      background: #e9efff;
-      color: #274690;
+      background: rgba(13, 110, 253, 0.1);
+      color: #0d3d96;
       font-weight: 600;
-      font-size: 0.92rem;
+      font-size: 0.9rem;
     }
 
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 18px;
-    }
-
-    .empty-state {
-      grid-column: 1 / -1;
-      padding: 32px;
-      text-align: center;
-      background: rgba(13, 27, 61, 0.04);
-      border: 1px dashed rgba(13, 27, 61, 0.18);
-      border-radius: 16px;
-      font-weight: 600;
-      color: rgba(13, 27, 61, 0.55);
-    }
-
-    .card {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      padding: 18px;
-      background: #fff;
-      border-radius: 16px;
-      box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
-      border: 1px solid rgba(15, 23, 42, 0.05);
-      position: relative;
-    }
-
-    .card-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-
-    .card h2 {
-      margin: 0;
-      font-size: 1.25rem;
-      color: #0d1b3d;
-    }
-
-    .winner-badge {
-      display: none;
-      font-size: 1.8rem;
-      transform: rotate(-6deg);
-      transition: transform 0.2s ease, opacity 0.2s ease;
-      filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.25));
-    }
-
-    .card.winner .winner-badge {
-      display: inline-flex;
-      opacity: 1;
-    }
-
-    .card p {
-      margin: 0;
-      color: rgba(15, 23, 42, 0.7);
-    }
-
-    .stats {
-      display: flex;
-      align-items: baseline;
-      gap: 12px;
-    }
-
-    .stats strong {
-      font-size: 1.6rem;
-    }
-
-    .stats span {
-      font-size: 0.95rem;
-      opacity: 0.7;
-    }
-
-    #share-link-panel {
-      margin: 0 auto 32px;
-      max-width: 480px;
-      background: #fff;
-      border-radius: 18px;
-      padding: 20px;
-      box-shadow: 0 16px 30px rgba(15, 23, 42, 0.1);
-      border: 1px solid rgba(15, 23, 42, 0.06);
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      gap: 12px;
+    #share-link-panel .card-body {
+      padding: 1.75rem 1.75rem 1.5rem;
     }
 
     .share-actions {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
+      gap: 0.75rem;
       justify-content: center;
+      margin-top: 1.25rem;
     }
 
-    .share-link-button,
-    #copy-rating-link {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 12px 22px;
-      border-radius: 999px;
-      border: none;
-      font-weight: 600;
-      font-size: 1rem;
-      color: #fff;
+    .btn-gradient {
       background: linear-gradient(135deg, #0d6efd, #6610f2);
-      cursor: pointer;
-      transition: transform 0.15s ease, box-shadow 0.2s ease;
-    }
-
-    .share-link-button:disabled,
-    #copy-rating-link:disabled {
-      background: #c8d4fb;
-      cursor: not-allowed;
-      box-shadow: none;
-      transform: none;
-    }
-
-    .share-link-button:not(:disabled):hover,
-    #copy-rating-link:not(:disabled):hover {
-      transform: translateY(-1px);
+      color: #fff;
+      border: none;
       box-shadow: 0 12px 28px rgba(13, 110, 253, 0.25);
     }
 
-    .share-link-button:focus-visible,
-    #copy-rating-link:focus-visible {
-      outline: 3px solid rgba(13, 110, 253, 0.35);
-      outline-offset: 3px;
+    .btn-gradient:disabled {
+      background: #c8d4fb;
+      box-shadow: none;
+    }
+
+    .btn-gradient:not(:disabled):hover {
+      color: #fff;
+      transform: translateY(-1px);
+    }
+
+    #copy-status {
+      min-height: 1.2rem;
+      text-align: center;
+      font-size: 0.9rem;
+      margin-top: 0.75rem;
+      color: #17683b;
+    }
+
+    #copy-status.error {
+      color: #c62828;
     }
 
     #qr-modal {
@@ -206,200 +108,186 @@
       position: relative;
     }
 
-    #qr-modal .modal-content h2 {
-      margin-top: 0;
-      margin-bottom: 12px;
-      font-size: 1.25rem;
-      color: #0d1b3d;
-    }
-
     #qr-modal .modal-actions {
       margin-top: 18px;
       display: flex;
       justify-content: center;
     }
 
+    #qr-code-output img {
+      max-width: 240px;
+      height: auto;
+    }
+
     #qr-close-btn {
-      padding: 8px 18px;
-      border-radius: 999px;
       border: none;
+      border-radius: 999px;
+      padding: 0.6rem 1.6rem;
+      font-weight: 600;
       background: #0d6efd;
       color: #fff;
-      font-weight: 600;
       cursor: pointer;
     }
 
-    #qr-code-output svg {
-      width: 240px;
-      height: 240px;
+    #qr-close-btn:hover {
+      background: #0b5ed7;
     }
 
-    #group-rating-link {
-      font-weight: 600;
-      color: #0d6efd;
-      text-decoration: none;
-    }
-
-    .copy-controls {
+    #speakersGrid .speaker-card {
+      background: #fff;
+      border-radius: 1rem;
+      box-shadow: 0 14px 30px rgba(15, 23, 42, 0.12);
+      border: 1px solid rgba(15, 23, 42, 0.05);
+      padding: 1.2rem 1.35rem;
+      height: 100%;
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      align-items: center;
-      width: 100%;
+      gap: 0.85rem;
     }
 
-    #copy-rating-link {
-      padding: 10px 18px;
-      border: none;
-      border-radius: 999px;
-      background: #0d6efd;
-      color: #fff;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s ease, transform 0.2s ease;
+    .speaker-card-wrapper.winner .speaker-card {
+      border-color: rgba(13, 110, 253, 0.45);
+      box-shadow: 0 18px 36px rgba(13, 110, 253, 0.18);
     }
 
-    #copy-rating-link:hover {
-      background: #0b5ed7;
-      transform: translateY(-1px);
+    .speaker-card-wrapper.winner .winner-badge {
+      display: inline-flex;
+      opacity: 1;
     }
 
-    #copy-rating-link:active {
-      transform: translateY(0);
+    .winner-badge {
+      display: none;
+      font-size: 1.8rem;
+      transform: rotate(-6deg);
+      filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.25));
     }
 
-    #copy-rating-link:disabled {
-      background: #a5c3f9;
-      cursor: not-allowed;
-      transform: none;
+    .speaker-topic {
+      margin: 0;
+      color: rgba(15, 23, 42, 0.7);
     }
 
-    .copy-status {
-      font-size: 0.9rem;
-      min-height: 1.2em;
-      color: #17683b;
+    .stats {
+      display: flex;
+      align-items: baseline;
+      gap: 0.75rem;
+    }
+
+    .stats strong {
+      font-size: 1.75rem;
+      font-weight: 700;
+    }
+
+    .stats span {
+      font-size: 0.95rem;
+      color: #6c757d;
+    }
+
+    .empty-state {
+      padding: 32px;
       text-align: center;
-    }
-
-    .copy-status.error {
-      color: #c62828;
-    }
-
-    .qr-fallback {
-      display: inline-block;
-      padding: 24px 16px;
-      border: 2px dashed rgba(13, 27, 61, 0.3);
-      border-radius: 12px;
-      color: rgba(13, 27, 61, 0.6);
+      background: rgba(13, 27, 61, 0.04);
+      border: 1px dashed rgba(13, 27, 61, 0.18);
+      border-radius: 16px;
       font-weight: 600;
-      text-align: center;
+      color: rgba(13, 27, 61, 0.55);
+    }
+
+    #leaderboardSection table thead th {
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-size: 0.75rem;
+      color: #6c757d;
     }
 
     .note {
-      margin-top: 16px;
+      margin-top: 2rem;
       font-size: 0.9rem;
-      opacity: 0.75;
+      color: #6c757d;
       text-align: center;
-    }
-
-    .table-wrapper {
-      margin-top: 32px;
-      background: #fff;
-      border-radius: 16px;
-      padding: 16px;
-      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
-      border: 1px solid rgba(15, 23, 42, 0.05);
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    th, td {
-      padding: 10px;
-      text-align: left;
-      border-bottom: 1px solid rgba(15, 23, 42, 0.08);
-    }
-
-    th {
-      background: rgba(15, 23, 42, 0.04);
-      font-size: 0.9rem;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
     }
 
     @media (max-width: 640px) {
       body {
         padding: 18px;
       }
-
-      .grid {
-        grid-template-columns: 1fr;
-      }
     }
   </style>
 </head>
 <body>
-  <main>
-    <header>
-      <h1>ToastMasters Ratings Dashboard</h1>
-      <p class="note">Copy and share the link below so attendees can rate all speakers from their own device in a single submission. Ratings stay in the browser and aggregate in real time while this page remains open.</p>
+  <div class="container-lg py-4">
+    <header class="mb-4">
+      <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+        <div>
+          <h1 class="fw-semibold mb-1">ToastMasters Ratings Dashboard</h1>
+          <p class="mb-0">Live standings update as audience feedback rolls in.</p>
+        </div>
+        <span class="session-pill">Session <span class="fw-semibold" id="sessionIdLabel">—</span></span>
+      </div>
     </header>
 
-    <section id="share-link-panel">
-      <div class="share-actions">
-        <button type="button" class="share-link-button" id="group-rating-button" disabled>Open audience rating form</button>
-        <button type="button" id="copy-rating-link" disabled>Copy rating form link</button>
-        <button type="button" class="share-link-button" id="show-qr-button" disabled>QR Code</button>
+    <section id="share-link-panel" class="card shadow-sm mb-4">
+      <div class="card-body">
+        <div class="text-muted small text-center text-lg-start mb-3">Share the link or QR code so attendees can rate every speaker from their own device.</div>
+        <div class="share-actions">
+          <button type="button" class="btn btn-gradient px-4" id="group-rating-button" disabled>Open audience rating form</button>
+          <button type="button" class="btn btn-outline-secondary px-4" id="copy-rating-link" disabled>Copy rating link</button>
+          <button type="button" class="btn btn-outline-dark px-4" id="show-qr-button" disabled>Show QR Code</button>
+        </div>
+        <span id="copy-status" class="copy-status" aria-live="polite"></span>
       </div>
-      <span id="copy-status" class="copy-status" aria-live="polite"></span>
     </section>
 
     <div id="qr-modal" role="dialog" aria-modal="true" aria-labelledby="qr-modal-title" aria-hidden="true">
       <div class="modal-content">
-        <h2 id="qr-modal-title">Audience Rating QR Code</h2>
-        <p style="margin-top:0;margin-bottom:16px;color:rgba(15,23,42,0.65);">Scan to open the audience rating form.</p>
+        <h2 id="qr-modal-title" class="h5 mb-2">Audience Rating QR Code</h2>
+        <p class="text-muted mb-3">Scan to open the audience rating form.</p>
         <div id="qr-code-output" role="img" aria-label="QR code for the audience rating form" style="display:flex;justify-content:center;margin-bottom:16px;"></div>
         <div class="modal-actions">
-          <button type="button" id="qr-close-btn">Close</button>
+          <button type="button" id="qr-close-btn" class="btn">Close</button>
         </div>
       </div>
     </div>
 
-    <section class="grid" id="speakersGrid"></section>
+    <section id="speakersGrid" class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4 mb-4"></section>
 
-    <section class="table-wrapper" id="leaderboardSection" hidden>
-      <h2 style="margin-top:0;">Live Leaderboard</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Speaker</th>
-            <th>Topic</th>
-            <th>Average</th>
-            <th>Votes</th>
-          </tr>
-        </thead>
-        <tbody id="leaderboardBody"></tbody>
-      </table>
+    <section class="card shadow-sm mb-4" id="leaderboardSection" hidden>
+      <div class="card-body">
+        <h2 class="h4 mb-3">Live Leaderboard</h2>
+        <div class="table-responsive">
+          <table class="table table-striped align-middle mb-0">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Speaker</th>
+                <th scope="col">Topic</th>
+                <th scope="col">Average</th>
+                <th scope="col">Votes</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboardBody"></tbody>
+          </table>
+        </div>
+      </div>
     </section>
 
     <p class="note">Refresh clears the local cache of ratings. Keep this page open on the main display during the meeting for automatic updates.</p>
-  </main>
+  </div>
 
   <template id="speaker-card-template">
-    <article class="card">
-      <div class="card-header">
-        <h2 class="speaker-name"></h2>
-        <span class="winner-badge" aria-hidden="true">👑</span>
-      </div>
-      <p class="speaker-topic"></p>
-      <div class="stats">
-        <strong class="avg">0.00</strong>
-        <span class="votes">0 votes</span>
-      </div>
-    </article>
+    <div class="col speaker-card-wrapper">
+      <article class="speaker-card">
+        <div class="d-flex align-items-center justify-content-between gap-2">
+          <h2 class="speaker-name mb-0 h5"></h2>
+          <span class="winner-badge" aria-hidden="true">👑</span>
+        </div>
+        <p class="speaker-topic"></p>
+        <div class="stats">
+          <strong class="avg">0.00</strong>
+          <span class="votes">0 votes</span>
+        </div>
+      </article>
+    </div>
   </template>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
@@ -409,26 +297,12 @@
     (function() {
       const params = new URLSearchParams(window.location.search);
       const sessionId = params.get('session');
-      const payloadParam = params.get('data');
-
-      const decode = (value) => {
-        try {
-          const decoded = window.atob(decodeURIComponent(value));
-          const json = decodeURIComponent(escape(decoded));
-          return JSON.parse(json);
-        } catch (err) {
-          console.error('Failed to decode speakers payload', err);
-          return null;
-        }
-      };
-
       if (!sessionId) {
         document.body.innerHTML = '<main><h1>Missing session information</h1><p>Re-open the dashboard from the timer page.</p></main>';
         return;
       }
 
-      const fallbackSpeakers = payloadParam ? (decode(payloadParam) || []) : [];
-      const fallbackOrder = new Map(Array.isArray(fallbackSpeakers) ? fallbackSpeakers.map((speaker, index) => [speaker.id, index]) : []);
+      const fallbackOrder = new Map();
       const SNAPSHOT_STORAGE_KEY = 'tmTimer.ratings.snapshot';
 
       const supabaseConfig = window.tmSupabaseConfig || {};
@@ -439,7 +313,7 @@
         console.warn('Supabase client unavailable; ratings will only sync on this device.');
       }
 
-      let speakers = Array.isArray(fallbackSpeakers) ? fallbackSpeakers.slice() : [];
+      let speakers = [];
       let realtimeChannel = null;
       let ratingsPoll = null;
       let lastRosterSignature = null;
@@ -465,6 +339,11 @@
       const qrModal = document.getElementById('qr-modal');
       const qrCodeOutput = document.getElementById('qr-code-output');
       const qrCloseBtn = document.getElementById('qr-close-btn');
+      const sessionIdLabel = document.getElementById('sessionIdLabel');
+
+      if (sessionIdLabel) {
+        sessionIdLabel.textContent = sessionId;
+      }
 
       let copyStatusTimeout;
       let latestRatingUrl = '';
@@ -508,12 +387,9 @@
         return list.map((entry) => `${entry.id}:${entry.name}:${entry.topic}:${entry.status}`).join('|');
       }
 
-      const encodeRoster = (list) => encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(list)))));
-
       const buildGroupRatingUrl = () => {
         const url = new URL('multi-speaker-rating.html', window.location.href);
         url.searchParams.set('session', sessionId);
-        url.searchParams.set('data', encodeRoster(speakers));
         return url;
       };
 
@@ -534,7 +410,7 @@
 
       function renderEmptyState() {
         if (!speakersGrid) return;
-        speakersGrid.innerHTML = '<div class="empty-state">No speakers are available for rating yet.</div>';
+        speakersGrid.innerHTML = '<div class="col-12"><div class="empty-state">No speakers are available for rating yet.</div></div>';
         Object.keys(cardsById).forEach((key) => delete cardsById[key]);
         toggleShareButtons(false);
         latestRatingUrl = '';
@@ -915,7 +791,10 @@
       const mapSpeakerRow = (row) => ({
         id: row.speaker_id || row.id,
         name: row.name || 'Speaker',
-        topic: row.topic || ''
+        topic: row.topic || '',
+        orderIndex: typeof row.order_index === 'number' ? row.order_index : null,
+        status: row.status || '',
+        totalTime: row.total_time || ''
       });
 
       const fetchSpeakersFromSupabase = async () => {
@@ -923,8 +802,9 @@
         try {
           const { data, error } = await supabase
             .from('speakers')
-            .select('speaker_id,name,topic')
-            .eq('session_id', sessionId);
+            .select('speaker_id,name,topic,order_index,total_time,status')
+            .eq('session_id', sessionId)
+            .order('order_index', { ascending: true, nullsFirst: true });
           if (error) throw error;
           if (!data || !data.length) return [];
           const mapped = data.map(mapSpeakerRow);
@@ -940,6 +820,7 @@
         const remote = await fetchSpeakersFromSupabase();
         if (remote === null) return;
         if (!remote.length) {
+          applyRosterUpdate([]);
           return;
         }
         remote.forEach((entry) => ensureArray(entry.id));

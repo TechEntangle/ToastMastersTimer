@@ -3,8 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; connect-src 'self' https://geaqvvbkwgfoxiakzums.supabase.co https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data:;">
   <title>ToastMasters Timer</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" crossorigin="anonymous">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
   <style>
     :root {
       color-scheme: light;
@@ -406,6 +410,16 @@
     const runningHint = document.getElementById('running-hint');
     const ratingsDashboardBtn = document.getElementById('ratingsDashboardBtn');
 
+    const supabaseConfig = window.tmSupabaseConfig || {};
+    const supabase = (window.supabase && supabaseConfig.url && supabaseConfig.anonKey)
+      ? window.supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey)
+      : null;
+    if (!supabase) {
+      console.warn('Supabase client unavailable; cross-device sync will be disabled.');
+    }
+
+    let supabaseSessionInitRequested = false;
+
     const numericInputs = [
       greenMinInput,
       greenSecInput,
@@ -486,6 +500,57 @@
       }
     }
 
+    function ensureSupabaseSessionInitialized(sessionId) {
+      if (!supabase || !sessionId || supabaseSessionInitRequested) return;
+      supabaseSessionInitRequested = true;
+      (async () => {
+        try {
+          const nowIso = new Date().toISOString();
+          await supabase.from('sessions').upsert({
+            session_id: sessionId,
+            created_at: nowIso,
+            updated_at: nowIso,
+            roster_size: 0
+          }, { onConflict: 'session_id' });
+        } catch (err) {
+          console.warn('Unable to initialize Supabase session metadata', err);
+        }
+      })();
+    }
+
+    async function syncRosterToSupabase(snapshot) {
+      if (!supabase || !snapshot) return;
+      try {
+        await supabase.from('sessions').upsert({
+          session_id: snapshot.sessionId,
+          updated_at: snapshot.updatedAt,
+          roster_size: snapshot.roster.length
+        }, { onConflict: 'session_id' });
+
+        const { error: clearError } = await supabase
+          .from('speakers')
+          .delete()
+          .eq('session_id', snapshot.sessionId);
+        if (clearError) throw clearError;
+
+        if (snapshot.roster.length) {
+          const rows = snapshot.roster.map((entry, order) => ({
+            session_id: snapshot.sessionId,
+            speaker_id: entry.id,
+            name: entry.name,
+            topic: entry.topic,
+            total_time: entry.totalTime,
+            status: entry.status,
+            order_index: order
+          }));
+          const { error: upsertError } = await supabase.from('speakers').upsert(rows);
+          if (upsertError) throw upsertError;
+        }
+      } catch (err) {
+        console.warn('Unable to sync roster to Supabase', err);
+      }
+    }
+
     function ensureRatingsSessionId() {
       if (ratingsSessionId) return ratingsSessionId;
       let restored = null;
@@ -496,6 +561,7 @@
       }
       if (restored) {
         ratingsSessionId = restored;
+        ensureSupabaseSessionInitialized(ratingsSessionId);
         return ratingsSessionId;
       }
       const generated = `tm-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -505,6 +571,7 @@
       } catch (err) {
         console.warn('Unable to persist ratings session id', err);
       }
+      ensureSupabaseSessionInitialized(ratingsSessionId);
       return ratingsSessionId;
     }
 
@@ -540,6 +607,7 @@
         console.warn('Unable to save ratings snapshot', err);
       }
       updateRatingsControls();
+      syncRosterToSupabase(snapshot);
       return snapshot;
     }
 

@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; connect-src 'self' https://geaqvvbkwgfoxiakzums.supabase.co https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data:;">
   <title>Rate Speakers</title>
   <style>
     :root {
@@ -181,20 +183,6 @@
     (function() {
       const params = new URLSearchParams(window.location.search);
       const sessionId = params.get('session');
-      const payloadParam = params.get('data');
-
-      const decodePayload = (value) => {
-        try {
-          const base64 = decodeURIComponent(value);
-          const decoded = window.atob(base64);
-          const json = decodeURIComponent(escape(decoded));
-          return JSON.parse(json);
-        } catch (err) {
-          console.error('Failed to decode speakers payload', err);
-          return null;
-        }
-      };
-
       if (!sessionId) {
         document.body.innerHTML = '<main><h1>Missing session information</h1><p>Use the dashboard QR to open this form.</p></main>';
         return;
@@ -208,7 +196,6 @@
         console.warn('Supabase client unavailable; ratings will only sync on this device.');
       }
 
-      const fallbackSpeakers = payloadParam ? (decodePayload(payloadParam) || []) : [];
       const SNAPSHOT_STORAGE_KEY = 'tmTimer.ratings.snapshot';
 
       const sessionTag = document.getElementById('sessionTag');
@@ -233,6 +220,7 @@
 
       let lastRosterSignature = null;
       let speakers = [];
+      let rosterChannel = null;
 
       const sanitizeRoster = (list) => {
         if (!Array.isArray(list)) return [];
@@ -413,33 +401,73 @@
       }
 
       const loadSpeakers = async () => {
-        if (!supabase) return null;
+        if (!supabase) {
+          return readRosterSnapshot();
+        }
         try {
           const { data, error } = await supabase
             .from('speakers')
-            .select('speaker_id,name,topic,status,total_time')
-            .eq('session_id', sessionId);
+            .select('speaker_id,name,topic,status,total_time,order_index')
+            .eq('session_id', sessionId)
+            .order('order_index', { ascending: true, nullsFirst: false });
           if (error) throw error;
-          if (data && data.length) return data;
+          if (Array.isArray(data)) return data;
         } catch (err) {
           console.warn('Unable to fetch speakers from Supabase', err);
         }
-        return null;
+        return readRosterSnapshot();
+      };
+
+      const refreshFromSupabase = async () => {
+        const remote = await loadSpeakers();
+        if (Array.isArray(remote)) {
+          applyRosterUpdate(remote);
+        }
+      };
+
+      const subscribeToSupabase = () => {
+        if (!supabase || rosterChannel) return;
+        rosterChannel = supabase.channel(`rating-roster-${sessionId}`)
+          .on('postgres_changes', {
+            event: '*',
+            schema: 'public',
+            table: 'speakers',
+            filter: `session_id=eq.${sessionId}`
+          }, () => {
+            refreshFromSupabase();
+          })
+          .on('postgres_changes', {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'sessions',
+            filter: `session_id=eq.${sessionId}`
+          }, () => {
+            refreshFromSupabase();
+          })
+          .subscribe((status, err) => {
+            if (err) {
+              console.warn('Supabase roster subscription error', err);
+            }
+            if (status === 'CHANNEL_ERROR') {
+              console.warn('Supabase roster channel error');
+            }
+          });
       };
 
       const initialize = async () => {
         const snapshot = readRosterSnapshot();
-        if (snapshot !== null) {
+        if (Array.isArray(snapshot) && snapshot.length) {
           applyRosterUpdate(snapshot);
         }
 
-        if (!speakers.length && Array.isArray(fallbackSpeakers) && fallbackSpeakers.length) {
-          applyRosterUpdate(fallbackSpeakers);
-        }
-
-        const remote = await loadSpeakers();
-        if (Array.isArray(remote) && remote.length) {
-          applyRosterUpdate(remote);
+        if (supabase) {
+          await refreshFromSupabase();
+          subscribeToSupabase();
+        } else {
+          const fallback = Array.isArray(snapshot) ? snapshot : [];
+          if (fallback.length) {
+            applyRosterUpdate(fallback);
+          }
         }
 
         if (!speakers.length) {
@@ -451,6 +479,19 @@
       };
 
       initialize();
+
+      window.addEventListener('beforeunload', () => {
+        if (rosterChannel) {
+          try { rosterChannel.unsubscribe(); } catch (_) {}
+        }
+        if (broadcastChannel) {
+          try { broadcastChannel.close(); } catch (_) {}
+        }
+        if (ratingsChannel) {
+          try { ratingsChannel.close(); } catch (_) {}
+        }
+        clearInterval(signalPoll);
+      });
 
       window.addEventListener('storage', (event) => {
         if (event.key !== SNAPSHOT_STORAGE_KEY) return;
