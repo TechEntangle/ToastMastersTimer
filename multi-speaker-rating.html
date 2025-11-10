@@ -559,6 +559,30 @@
         let supabaseSynced = false;
         if (supabase) {
           try {
+            const nowIso = new Date().toISOString();
+            const sessionPayload = {
+              session_id: sessionId,
+              updated_at: nowIso,
+              roster_size: speakers.length
+            };
+            const rosterRows = speakers.map((speaker, index) => ({
+              session_id: sessionId,
+              speaker_id: speaker.id,
+              name: speaker.name,
+              topic: speaker.topic,
+              status: speaker.status,
+              total_time: speaker.totalTime || '',
+              order_index: Number.isFinite(speaker.orderIndex) ? speaker.orderIndex : index
+            }));
+
+            const { error: sessionUpsertError } = await supabase.from('sessions').upsert(sessionPayload, { onConflict: 'session_id' });
+            if (sessionUpsertError) throw sessionUpsertError;
+
+            if (rosterRows.length) {
+              const { error: rosterUpsertError } = await supabase.from('speakers').upsert(rosterRows);
+              if (rosterUpsertError) throw rosterUpsertError;
+            }
+
             const rows = ratedEntries.map(({ speaker, rating }) => ({
               session_id: sessionId,
               speaker_id: speaker.id,
@@ -568,9 +592,47 @@
             if (error) throw error;
             supabaseSynced = true;
           } catch (err) {
-            console.warn('Supabase insert failed, falling back to local broadcast only.', err);
+            console.warn('Supabase insert failed, attempting repair.', err);
             const message = String(err?.message || err || '');
-            if (!/foreign key/i.test(message)) {
+            if (/foreign key/i.test(message) || /sessions_session_id_fkey/i.test(message)) {
+              try {
+                const nowIso = new Date().toISOString();
+                const sessionPayload = {
+                  session_id: sessionId,
+                  updated_at: nowIso,
+                  roster_size: speakers.length
+                };
+                const rosterRows = speakers.map((speaker, index) => ({
+                  session_id: sessionId,
+                  speaker_id: speaker.id,
+                  name: speaker.name,
+                  topic: speaker.topic,
+                  status: speaker.status,
+                  total_time: speaker.totalTime || '',
+                  order_index: Number.isFinite(speaker.orderIndex) ? speaker.orderIndex : index
+                }));
+
+                const { error: sessionError } = await supabase.from('sessions').upsert(sessionPayload, { onConflict: 'session_id' });
+                if (sessionError) throw sessionError;
+
+                if (rosterRows.length) {
+                  const { error: rosterError } = await supabase.from('speakers').upsert(rosterRows);
+                  if (rosterError) throw rosterError;
+                }
+
+                const retryRows = ratedEntries.map(({ speaker, rating }) => ({
+                  session_id: sessionId,
+                  speaker_id: speaker.id,
+                  rating
+                }));
+                const { error: retryError } = await supabase.from('ratings').insert(retryRows);
+                if (retryError) throw retryError;
+                supabaseSynced = true;
+              } catch (repairErr) {
+                console.warn('Supabase repair failed, falling back to local broadcast only.', repairErr);
+                setMessage('Ratings were stored locally. Please refresh the dashboard after a moment.', 'warning');
+              }
+            } else {
               setMessage(`Unable to submit ratings right now. ${message}`, 'error');
               submitBtn.disabled = false;
               return;

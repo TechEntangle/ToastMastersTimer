@@ -198,6 +198,7 @@
       }
 
       const fallbackOrder = new Map();
+      const speakerMeta = new Map();
       const SNAPSHOT_STORAGE_KEY = 'tmTimer.ratings.snapshot';
 
       const supabaseConfig = window.tmSupabaseConfig || {};
@@ -322,19 +323,21 @@
         if (signature === lastRosterSignature) return cleaned.length;
         lastRosterSignature = signature;
         fallbackOrder.clear();
-        cleaned.forEach((entry, index) => fallbackOrder.set(entry.id, index));
+        speakerMeta.clear();
+        cleaned.forEach((entry, index) => {
+          fallbackOrder.set(entry.id, index);
+          speakerMeta.set(entry.id, entry);
+        });
+        const hadSpeakers = speakers.length > 0;
         speakers = cleaned;
         if (!speakers.length) {
-          Object.keys(ratings).forEach((key) => { delete ratings[key]; });
-          renderEmptyState();
-          persistCache();
+          if (!hadSpeakers) {
+            Object.keys(ratings).forEach((key) => { delete ratings[key]; });
+            renderEmptyState();
+            persistCache();
+          }
           return 0;
         }
-        Object.keys(ratings).forEach((key) => {
-          if (!speakers.some((speaker) => speaker.id === key)) {
-            delete ratings[key];
-          }
-        });
         speakers.forEach((speaker) => ensureArray(speaker.id));
         updateRatingDestination();
         renderLeaderboard();
@@ -513,12 +516,17 @@
 
       const renderLeaderboard = () => {
         if (!leaderboardSection || !leaderboardBody) return;
-        const rows = speakers.map((speaker) => {
-          const arr = ratings[speaker.id] || [];
-          const count = arr.length;
-          const average = count ? arr.reduce((sum, val) => sum + val, 0) / count : 0;
-          return { speaker, count, average };
+        const rows = Object.entries(ratings).map(([id, values]) => {
+          const count = Array.isArray(values) ? values.length : 0;
+          const average = count ? values.reduce((sum, val) => sum + val, 0) / count : 0;
+          const speaker = speakers.find((entry) => entry.id === id) || speakerMeta.get(id) || {
+            id,
+            name: `Speaker ${fallbackOrder.has(id) ? String(fallbackOrder.get(id) + 1) : ''}`.trim() || id,
+            topic: '—'
+          };
+          return { id, speaker, count, average };
         }).filter((item) => item.count > 0);
+        console.log('[dashboard] renderLeaderboard rows', rows);
 
         if (!rows.length) {
           leaderboardSection.hidden = false;
@@ -546,7 +554,7 @@
           const pos = document.createElement('td');
           pos.textContent = String(index + 1);
           const name = document.createElement('td');
-          name.textContent = row.speaker.name;
+          name.textContent = row.speaker.name || row.id;
           const topic = document.createElement('td');
           topic.textContent = row.speaker.topic || '—';
           const avg = document.createElement('td');
@@ -622,12 +630,15 @@
             .from('speakers')
             .select('speaker_id,name,topic,order_index,total_time,status')
             .eq('session_id', sessionId)
-            .order('order_index', { ascending: true, nullsFirst: true });
+            .order('order_index', { ascending: true });
           if (error) throw error;
           if (!data) return [];
           if (!data.length) return [];
           const mapped = data.map(mapSpeakerRow);
-          mapped.forEach((entry, index) => fallbackOrder.set(entry.id, index));
+          mapped.forEach((entry, index) => {
+            fallbackOrder.set(entry.id, index);
+            speakerMeta.set(entry.id, entry);
+          });
           return mapped;
         } catch (err) {
           console.warn('Unable to fetch speakers from Supabase', err);
@@ -646,11 +657,6 @@
           return;
         }
         remote.forEach((entry) => ensureArray(entry.id));
-        Object.keys(ratings).forEach((key) => {
-          if (!remote.some((speaker) => speaker.id === key)) {
-            delete ratings[key];
-          }
-        });
         speakers = remote;
         processedRemoteIds.clear();
         updateRatingDestination();
@@ -668,17 +674,24 @@
             .order('submitted_at', { ascending: true });
           if (error) throw error;
           const rows = Array.isArray(data) ? data : [];
-          const hasChanges = rows.some((row) => {
-            const key = `${row.speaker_id}|${row.submitted_at}`;
-            if (processedRemoteIds.has(key)) return false;
-            processedRemoteIds.add(key);
-            return true;
-          });
-          if (!hasChanges && ratingsPoll) return;
+          console.log('[dashboard] hydrate rows', rows);
+          
+          // Clear and rebuild ratings from Supabase
           Object.keys(ratings).forEach((key) => { ratings[key] = []; });
+          processedRemoteIds.clear();
+          
           rows.forEach((row) => {
-            applyRatingEntry({ speakerId: row.speaker_id, rating: row.rating, submitted_at: row.submitted_at });
+            const speakerId = row.speaker_id;
+            const numericRating = Number(row.rating);
+            if (!speakerId || !Number.isFinite(numericRating) || numericRating < 1 || numericRating > 5) return;
+            
+            const key = `${speakerId}|${row.submitted_at}`;
+            processedRemoteIds.add(key);
+            
+            const arr = ensureArray(speakerId);
+            arr.push(numericRating);
           });
+          
           renderLeaderboard();
           persistCache();
         } catch (err) {
@@ -856,3 +869,4 @@
 
 </body>
 </html>
+
