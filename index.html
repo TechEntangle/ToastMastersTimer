@@ -261,6 +261,57 @@
       text-decoration: underline;
     }
 
+    #meta.locked .form-control {
+      display: none;
+    }
+
+    #meta.locked .form-label {
+      display: none;
+    }
+
+    .meta-card-display {
+      display: none;
+      padding: 1rem 1.25rem;
+      background: #f8f9fa;
+      border-left: 4px solid #0d6efd;
+      border-radius: 8px;
+    }
+
+    #meta.locked .meta-card-display {
+      display: block;
+    }
+
+    .meta-card-label {
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-size: 0.7rem;
+      color: #6c757d;
+      margin-bottom: 0.35rem;
+      font-weight: 600;
+    }
+
+    .meta-card-value {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: #212529;
+      word-break: break-word;
+    }
+
+    .meta-lock-indicator {
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: #6c757d;
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid #dee2e6;
+    }
+
+    #meta.locked .meta-lock-indicator {
+      display: flex;
+    }
+
     @media (max-width: 576px) {
       .time-input-group input {
         width: 3.4rem;
@@ -323,11 +374,23 @@
           <div class="col-md-6">
             <label for="speakerInput" class="form-label">Speaker</label>
             <input id="speakerInput" type="text" class="form-control" placeholder="Name" />
+            <div class="meta-card-display">
+              <div class="meta-card-label">Speaker</div>
+              <div class="meta-card-value" id="speakerCardValue">—</div>
+            </div>
           </div>
           <div class="col-md-6">
             <label for="topicInput" class="form-label">Topic</label>
             <input id="topicInput" type="text" class="form-control" placeholder="Table Topic / Speech Title" />
+            <div class="meta-card-display">
+              <div class="meta-card-label">Topic</div>
+              <div class="meta-card-value" id="topicCardValue">—</div>
+            </div>
           </div>
+        </div>
+        <div class="meta-lock-indicator">
+          <span>🔒</span>
+          <span>Fields locked during session — Reset or End Talk to edit</span>
         </div>
       </div>
     </div>
@@ -446,6 +509,8 @@
     const metaPanel = document.getElementById('meta');
     const controlsPanel = document.querySelector('.controls');
     const logSection = document.getElementById('log-section');
+    const speakerCardValue = document.getElementById('speakerCardValue');
+    const topicCardValue = document.getElementById('topicCardValue');
     const startPauseLabel = startPauseBtn.querySelector('.btn-label');
     const graceIndicator = document.getElementById('grace-indicator');
     const runningHint = document.getElementById('running-hint');
@@ -532,6 +597,27 @@
     function setMetaHidden(shouldHide) {
       if (!metaPanel) return;
       metaPanel.style.display = shouldHide ? 'none' : '';
+    }
+
+    function setMetaLocked(locked) {
+      if (!metaPanel) return;
+      if (locked) {
+        metaPanel.classList.add('locked');
+        updateMetaCardValues();
+      } else {
+        metaPanel.classList.remove('locked');
+      }
+    }
+
+    function updateMetaCardValues() {
+      if (speakerCardValue) {
+        const value = speakerInput.value.trim();
+        speakerCardValue.textContent = value || '—';
+      }
+      if (topicCardValue) {
+        const value = topicInput.value.trim();
+        topicCardValue.textContent = value || '—';
+      }
     }
 
     function setControlsHidden(shouldHide) {
@@ -873,6 +959,7 @@
           lastCue = 'none';
           setGraceIndicator(false);
         }
+        setMetaLocked(true);
         setMetaHidden(true);
         setControlsHidden(true);
         setDisplayHidden(false);
@@ -906,6 +993,7 @@
       lastCue = 'none';
       setGraceIndicator(false);
       if (startPauseLabel) startPauseLabel.textContent = 'Start';
+      setMetaLocked(false);
       setMetaHidden(false);
       setControlsHidden(false);
       setDisplayHidden(true);
@@ -940,6 +1028,7 @@
       lastCue = 'none';
       setGraceIndicator(false);
       if (startPauseLabel) startPauseLabel.textContent = 'Start';
+      setMetaLocked(false);
       setMetaHidden(false);
       setControlsHidden(false);
       setDisplayHidden(true);
