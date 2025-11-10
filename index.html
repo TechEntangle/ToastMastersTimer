@@ -119,6 +119,52 @@
       letter-spacing: 0.2px;
     }
 
+    #mini-control-bar {
+      display: none;
+      margin: 1.5rem auto 0;
+      padding: 0.75rem 1.5rem;
+      background: rgba(33, 37, 41, 0.92);
+      border-radius: 999px;
+      gap: 0.5rem;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.3);
+    }
+
+    #mini-control-bar.active {
+      display: inline-flex;
+    }
+
+    .mini-btn {
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: #fff;
+      padding: 0.6rem 1rem;
+      border-radius: 12px;
+      font-size: 1.3rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 48px;
+      min-height: 48px;
+    }
+
+    .mini-btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
+    }
+
+    .mini-btn:active {
+      transform: translateY(0);
+    }
+
+    .mini-btn[title] {
+      position: relative;
+    }
+
     .time-input-group input {
       width: 4.2rem;
       text-align: right;
@@ -262,6 +308,11 @@
           <span class="grace-icon" aria-hidden="true">🕒</span>
           <span class="grace-text">30s grace period in effect</span>
         </div>
+        <div id="mini-control-bar" role="toolbar" aria-label="Timer controls">
+          <button type="button" class="mini-btn" id="miniPauseBtn" title="Pause" aria-label="Pause timer">⏸️</button>
+          <button type="button" class="mini-btn" id="miniEndTalkBtn" title="End Talk" aria-label="End talk">🛑</button>
+          <button type="button" class="mini-btn" id="miniDingBtn" title="Ding Sound" aria-label="Play ding sound">🔊</button>
+        </div>
         <div id="running-hint" aria-live="polite"></div>
       </div>
     </div>
@@ -400,6 +451,10 @@
     const runningHint = document.getElementById('running-hint');
     const ratingsDashboardBtn = document.getElementById('ratingsDashboardBtn');
     const sessionIdBadge = document.getElementById('sessionIdBadge');
+    const miniControlBar = document.getElementById('mini-control-bar');
+    const miniPauseBtn = document.getElementById('miniPauseBtn');
+    const miniEndTalkBtn = document.getElementById('miniEndTalkBtn');
+    const miniDingBtn = document.getElementById('miniDingBtn');
 
     const supabaseConfig = window.tmSupabaseConfig || {};
     const supabase = (window.supabase && supabaseConfig.url && supabaseConfig.anonKey)
@@ -492,6 +547,15 @@
       } else {
         runningHint.style.display = 'none';
         runningHint.textContent = '';
+      }
+    }
+
+    function setMiniControlBar(shouldShow) {
+      if (!miniControlBar) return;
+      if (shouldShow) {
+        miniControlBar.classList.add('active');
+      } else {
+        miniControlBar.classList.remove('active');
       }
     }
 
@@ -611,7 +675,7 @@
       return withinTime;
     }
 
-    function persistRatingsSnapshot() {
+    async function persistRatingsSnapshot() {
       const sessionId = ensureRatingsSessionId();
       const snapshot = {
         sessionId,
@@ -624,7 +688,7 @@
         console.warn('Unable to save ratings snapshot', err);
       }
       updateRatingsControls();
-      syncRosterToSupabase(snapshot);
+      await syncRosterToSupabase(snapshot);
       return snapshot;
     }
 
@@ -813,6 +877,7 @@
         setControlsHidden(true);
         setDisplayHidden(false);
         setRunningHint(true);
+        setMiniControlBar(true);
         timerInterval = setInterval(updateTimer, 1000);
       } else {
         isRunning = false;
@@ -823,6 +888,7 @@
         setControlsHidden(false);
         setDisplayHidden(true);
         setRunningHint(false);
+        setMiniControlBar(false);
       }
     }
 
@@ -844,13 +910,14 @@
       setControlsHidden(false);
       setDisplayHidden(true);
       setRunningHint(false);
+      setMiniControlBar(false);
       speakerInput.value = '';
       topicInput.value = '';
       updateSpeaker();
       updateTopic();
     });
 
-    endTalkBtn.addEventListener('click', () => {
+    endTalkBtn.addEventListener('click', async () => {
       const name = (speakerInput.value.trim() || speakerName.textContent || '').trim();
       const topic = (topicInput.value.trim() || topicName.textContent || '').trim();
       const totalTime = formatTime(elapsedSeconds);
@@ -860,7 +927,7 @@
       logRecords.push(record);
       updateLogVisibility();
       appendLogRow({ ...record, statusLabel: status.label, statusClass: status.className, statusIcon: status.icon });
-      persistRatingsSnapshot();
+      await persistRatingsSnapshot();
 
       if (timerInterval) {
         clearInterval(timerInterval);
@@ -877,6 +944,7 @@
       setControlsHidden(false);
       setDisplayHidden(true);
       setRunningHint(false);
+      setMiniControlBar(false);
       speakerInput.value = '';
       topicInput.value = '';
       updateSpeaker();
@@ -898,8 +966,8 @@
       URL.revokeObjectURL(url);
     });
 
-    ratingsDashboardBtn?.addEventListener('click', () => {
-      const snapshot = persistRatingsSnapshot();
+    ratingsDashboardBtn?.addEventListener('click', async () => {
+      const snapshot = await persistRatingsSnapshot();
       const dashboardUrl = new URL('ratings-dashboard.html', window.location.href);
       dashboardUrl.searchParams.set('session', snapshot.sessionId);
       window.open(dashboardUrl.toString(), '_blank', 'noopener');
@@ -934,6 +1002,21 @@
     topicInput.addEventListener('input', updateTopic);
 
     testSoundBtn?.addEventListener('click', playCue);
+
+    miniPauseBtn?.addEventListener('click', () => {
+      toggleStartPause();
+    });
+
+    miniEndTalkBtn?.addEventListener('click', () => {
+      if (!confirm('End this talk and log the time?')) {
+        return;
+      }
+      endTalkBtn.click();
+    });
+
+    miniDingBtn?.addEventListener('click', () => {
+      playCue();
+    });
 
     ensureRatingsSessionId();
     updateRatingsControls();
