@@ -119,6 +119,89 @@
       letter-spacing: 0.2px;
     }
 
+    /* Progress Bar Styles */
+    .progress-container {
+      position: relative;
+      margin: 0 auto 20px;
+      max-width: 90%;
+    }
+
+    .progress-bar-custom {
+      width: 100%;
+      height: 24px;
+      background: #e9ecef;
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .progress-bar-slim {
+      height: 24px;
+      border-radius: 12px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: #6c757d;
+      transition: width 0.3s ease, background 0.3s ease;
+      border-radius: 12px;
+      position: relative;
+      width: 0%;
+    }
+
+    /* Grace period blinking animation */
+    .progress-fill.grace-active {
+      animation: graceBlink 1s ease-in-out infinite;
+    }
+
+    @keyframes graceBlink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    /* Progress Bar Markers */
+    .markers {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      position: relative;
+      height: 45px;
+      pointer-events: none;
+    }
+
+    .markers-above {
+      margin-bottom: 8px;
+      margin-top: 0;
+    }
+
+    .marker {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: absolute;
+      transform: translateX(-50%);
+    }
+
+    .marker-line {
+      width: 3px;
+      height: 45px;
+      border-radius: 2px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    }
+
+    .marker-line.blue { background: #0d6efd; }
+    .marker-line.green { background: #28a745; }
+    .marker-line.yellow { background: #ffc107; }
+    .marker-line.red { background: #dc3545; }
+
+    .marker-time {
+      font-size: 11px;
+      font-weight: 600;
+      color: #495057;
+      margin-bottom: 4px;
+    }
+
     #mini-control-bar {
       display: none;
       margin: 1.5rem auto 0;
@@ -354,6 +437,13 @@
 
     <div class="card timer-shell border-0 mb-4" style="display:none;">
       <div class="card-body text-center">
+        <div class="progress-container" id="progress-container" style="display:none;">
+          <div class="markers markers-above" id="timer-markers"></div>
+          <div class="progress-bar-custom progress-bar-slim">
+            <div class="progress-fill" id="timer-progress-fill"></div>
+          </div>
+        </div>
+        
         <div id="timer-display">00:00</div>
         <div id="grace-indicator" role="status" aria-live="polite" aria-hidden="true">
           <span class="grace-icon" aria-hidden="true">🕒</span>
@@ -521,6 +611,9 @@
     const miniPauseBtn = document.getElementById('miniPauseBtn');
     const miniEndTalkBtn = document.getElementById('miniEndTalkBtn');
     const miniDingBtn = document.getElementById('miniDingBtn');
+    const progressContainer = document.getElementById('progress-container');
+    const timerProgressFill = document.getElementById('timer-progress-fill');
+    const timerMarkers = document.getElementById('timer-markers');
 
     const supabaseConfig = window.tmSupabaseConfig || {};
     const supabase = (window.supabase && supabaseConfig.url && supabaseConfig.anonKey)
@@ -556,6 +649,8 @@
     let lastCue = 'none';
     let lastGraceState = null;
     let currentMinTime = 60; // Minimum qualification time for current preset (default: Table Topics)
+    let currentTimerMilestones = {}; // Current preset milestones for progress bar
+    let currentMaxTime = 150; // Max time including grace period
 
     function playCue() {
       if (!cueAudioTemplate) return;
@@ -579,6 +674,27 @@
       SP: { min: 270, green: 300, yellow: 360, red: 420 }   // Speech: 4:30-7:30 (min 30s before green)
     };
 
+    function buildTimerMilestones(presetKey) {
+      const preset = presets[presetKey];
+      if (!preset) return;
+      
+      currentTimerMilestones = {};
+      
+      // For Table Topics, min = green (same time)
+      if (preset.min === preset.green) {
+        currentTimerMilestones.minGreen = { time: preset.min, lineClass: 'green', color: '#28a745' };
+      } else {
+        // For others, min comes before green - show min as BLUE (qualifying line)
+        currentTimerMilestones.min = { time: preset.min, lineClass: 'blue', color: '#0d6efd' };
+        currentTimerMilestones.green = { time: preset.green, lineClass: 'green', color: '#28a745' };
+      }
+      
+      currentTimerMilestones.yellow = { time: preset.yellow, lineClass: 'yellow', color: '#ffc107' };
+      currentTimerMilestones.red = { time: preset.red, lineClass: 'red', color: '#dc3545' };
+      
+      currentMaxTime = preset.red + GRACE_SECONDS; // Max time includes grace period
+    }
+
     function applyPreset(key) {
       const preset = presets[key];
       if (!preset) return;
@@ -589,6 +705,27 @@
       yellowSecInput.value = preset.yellow % 60;
       redMinInput.value = Math.floor(preset.red / 60);
       redSecInput.value = preset.red % 60;
+      
+      // Build progress bar milestones
+      buildTimerMilestones(key);
+      initializeTimerMarkers();
+    }
+
+    function initializeTimerMarkers() {
+      if (!timerMarkers) return;
+      timerMarkers.innerHTML = '';
+
+      Object.entries(currentTimerMilestones).forEach(([key, milestone]) => {
+        const percentage = (milestone.time / currentMaxTime) * 100;
+        const marker = document.createElement('div');
+        marker.className = 'marker';
+        marker.style.left = `${percentage}%`;
+        marker.innerHTML = `
+          <div class="marker-time">${formatTime(milestone.time)}</div>
+          <div class="marker-line ${milestone.lineClass}"></div>
+        `;
+        timerMarkers.appendChild(marker);
+      });
     }
 
     function setInputsDisabled(state) {
@@ -884,10 +1021,45 @@
       lastCue = cue;
     }
 
+    function updateProgressBar() {
+      if (!timerProgressFill || !progressContainer) return;
+      
+      const t = thresholds();
+      const graceLimit = t.red > 0 ? t.red + GRACE_SECONDS : null;
+      const withinGrace = graceLimit !== null && elapsedSeconds >= t.red && elapsedSeconds <= graceLimit;
+      
+      // Calculate progress percentage
+      const percentage = Math.min((elapsedSeconds / currentMaxTime) * 100, 100);
+      timerProgressFill.style.width = `${percentage}%`;
+      
+      // Determine progress bar color based on current zone
+      let progressColor = '#6c757d'; // gray (before min)
+      
+      if (elapsedSeconds < currentMinTime) {
+        progressColor = '#6c757d'; // gray
+      } else if (elapsedSeconds < t.yellow) {
+        progressColor = '#28a745'; // green
+      } else if (elapsedSeconds < t.red) {
+        progressColor = '#ffc107'; // yellow
+      } else {
+        progressColor = '#dc3545'; // red
+      }
+      
+      timerProgressFill.style.background = progressColor;
+      
+      // Add/remove blinking animation for grace period
+      if (withinGrace) {
+        timerProgressFill.classList.add('grace-active');
+      } else {
+        timerProgressFill.classList.remove('grace-active');
+      }
+    }
+
     function updateTimer() {
       elapsedSeconds += 1;
       timerDisplay.textContent = formatTime(elapsedSeconds);
       updateBackground();
+      updateProgressBar();
     }
 
     function evaluateStatus(totalSeconds) {
@@ -976,6 +1148,7 @@
         setDisplayHidden(false);
         setRunningHint(true);
         setMiniControlBar(true);
+        if (progressContainer) progressContainer.style.display = ''; // Show progress bar
         timerInterval = setInterval(updateTimer, 1000);
       } else {
         isRunning = false;
@@ -987,6 +1160,7 @@
         setDisplayHidden(true);
         setRunningHint(false);
         setMiniControlBar(false);
+        // Keep progress bar visible during pause
       }
     }
 
@@ -1010,6 +1184,8 @@
       setDisplayHidden(true);
       setRunningHint(false);
       setMiniControlBar(false);
+      if (progressContainer) progressContainer.style.display = 'none'; // Hide progress bar
+      if (timerProgressFill) timerProgressFill.style.width = '0%'; // Reset progress
       speakerInput.value = '';
       topicInput.value = '';
       updateSpeaker();
@@ -1045,6 +1221,8 @@
       setDisplayHidden(true);
       setRunningHint(false);
       setMiniControlBar(false);
+      if (progressContainer) progressContainer.style.display = 'none'; // Hide progress bar
+      if (timerProgressFill) timerProgressFill.style.width = '0%'; // Reset progress
       speakerInput.value = '';
       topicInput.value = '';
       updateSpeaker();
@@ -1128,6 +1306,10 @@
     setMetaHidden(false);
     setControlsHidden(false);
     setRunningHint(false);
+    
+    // Initialize progress bar markers on page load
+    buildTimerMilestones('TT'); // Default to Table Topics
+    initializeTimerMarkers();
   </script>
 
     <footer class="py-3 text-center text-muted small">

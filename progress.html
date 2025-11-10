@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Progress Bar Demo - Table Topics</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <style>
+    body {
+      background: #f5f7fb;
+      font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+      padding: 40px 20px;
+    }
+
+    .demo-container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .demo-section {
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      margin-bottom: 40px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
+    .demo-section h2 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: #0d1b3d;
+    }
+
+    .demo-section h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-top: 24px;
+      margin-bottom: 12px;
+      color: #495057;
+    }
+
+    /* Timer Display Styles */
+    .timer-display {
+      font-size: 5rem;
+      font-weight: 700;
+      text-align: center;
+      padding: 40px 20px 20px;
+      border-radius: 12px;
+      background: var(--timer-bg, #ffffff);
+      color: var(--timer-color, #111111);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    /* Progress Bar Common Styles */
+    .progress-container {
+      position: relative;
+      margin: 20px 0;
+    }
+
+    .progress-bar-custom {
+      width: 100%;
+      height: 40px;
+      background: #e9ecef;
+      border-radius: 20px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--progress-color, #28a745);
+      transition: width 0.3s ease, background 0.3s ease;
+      border-radius: 20px;
+      position: relative;
+    }
+
+    /* Grace period blinking animation */
+    .progress-fill.grace-active {
+      animation: graceBlink 1s ease-in-out infinite;
+    }
+
+    @keyframes graceBlink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    /* Milestone Markers */
+    .markers {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      position: relative;
+      height: 45px;
+      margin-top: -5px;
+      pointer-events: none;
+    }
+
+    .marker {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: absolute;
+      transform: translateX(-50%);
+    }
+
+    .marker-line {
+      width: 3px;
+      height: 45px;
+      border-radius: 2px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    }
+
+    .marker-line.blue { background: #0d6efd; }
+    .marker-line.green { background: #28a745; }
+    .marker-line.yellow { background: #ffc107; }
+    .marker-line.red { background: #dc3545; }
+
+    .marker-time {
+      font-size: 11px;
+      font-weight: 600;
+      color: #495057;
+      margin-bottom: 4px;
+    }
+
+    /* Mini Control Bar */
+    .mini-control-bar {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    .mini-btn {
+      background: rgba(33, 37, 41, 0.9);
+      border: none;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .mini-btn:hover {
+      background: rgba(33, 37, 41, 1);
+      transform: translateY(-2px);
+    }
+
+    /* Option 2 Specific - Slim Bar */
+    .progress-bar-slim {
+      height: 24px;
+      border-radius: 12px;
+    }
+
+    .markers-above {
+      margin-bottom: 8px;
+      margin-top: 0;
+    }
+
+    /* Option 3 Specific - Detailed Card */
+    .progress-card {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+
+    .progress-card h4 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #495057;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .time-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #6c757d;
+    }
+
+    .time-label {
+      text-align: center;
+      position: absolute;
+      transform: translateX(-50%);
+    }
+
+    .time-value {
+      font-size: 13px;
+      color: #212529;
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    /* Color States */
+    .bg-green { background: #28a745 !important; }
+    .bg-yellow { background: #ffc107 !important; }
+    .bg-red { background: #dc3545 !important; }
+    .bg-grace { background: #e83e8c !important; }
+
+    /* Controls */
+    .controls {
+      margin: 30px 0;
+      text-align: center;
+    }
+
+    .controls button {
+      margin: 0 10px;
+    }
+
+    .info-badge {
+      display: inline-block;
+      background: #e7f3ff;
+      color: #0066cc;
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 600;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="demo-container">
+    <div class="text-center mb-5">
+      <h1 class="display-5 fw-bold mb-2">Progress Bar Demo - Option 2: Slim Bar</h1>
+      <p class="text-muted mb-0"><small>✨ Progress bar <strong>blinks</strong> during grace period (30s after red)</small></p>
+    </div>
+
+    <!-- Controls -->
+    <div class="demo-section">
+      <div class="controls">
+        <div class="mb-3">
+          <label for="presetSelect" class="form-label fw-semibold">Select Speech Type:</label>
+          <select class="form-select form-select-lg" id="presetSelect" style="max-width: 400px; margin: 0 auto;">
+            <option value="TT">Table Topics (1–2 min)</option>
+            <option value="EV">Evaluation (2–3 min)</option>
+            <option value="IB">Icebreaker (4–6 min)</option>
+            <option value="SP">Speech (5–7 min)</option>
+          </select>
+        </div>
+        <div class="mt-4">
+          <button class="btn btn-success btn-lg" id="startBtn">▶️ Start Demo</button>
+          <button class="btn btn-secondary" id="resetBtn">⟲ Reset</button>
+          <button class="btn btn-outline-primary" id="speedBtn">⏩ Speed: 1x</button>
+        </div>
+      </div>
+      <div class="text-center mt-3">
+        <div class="info-badge" id="statusBadge">Click Start to begin demo</div>
+      </div>
+    </div>
+
+    <!-- Slim Progress Bar (Option 2) -->
+    <div class="demo-section">
+      <div style="max-width: 700px; margin: 0 auto;">
+        <div class="progress-container">
+          <div class="markers markers-above" id="markers2"></div>
+          <div class="progress-bar-custom progress-bar-slim">
+            <div class="progress-fill" id="progress2"></div>
+          </div>
+        </div>
+
+        <div class="timer-display" id="timer2">00:00</div>
+
+        <div class="mini-control-bar">
+          <button class="mini-btn">⏸️</button>
+          <button class="mini-btn">🛑</button>
+          <button class="mini-btn">🔊</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // All speech type configurations
+    const PRESETS = {
+      TT: { // Table Topics
+        min: 60,
+        green: 60,
+        yellow: 90,
+        red: 120,
+        grace: 150
+      },
+      EV: { // Evaluation
+        min: 90,
+        green: 120,
+        yellow: 150,
+        red: 180,
+        grace: 210
+      },
+      IB: { // Icebreaker
+        min: 210,
+        green: 240,
+        yellow: 300,
+        red: 360,
+        grace: 390
+      },
+      SP: { // Speech
+        min: 270,
+        green: 300,
+        yellow: 360,
+        red: 420,
+        grace: 450
+      }
+    };
+
+    let currentPreset = 'TT';
+    let currentMilestones = {};
+    let currentMaxTime = 0;
+    let currentTime = 0;
+    let isRunning = false;
+    let intervalId = null;
+    let speed = 1; // 1x, 2x, 4x
+
+    const presetSelect = document.getElementById('presetSelect');
+    const startBtn = document.getElementById('startBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const speedBtn = document.getElementById('speedBtn');
+    const statusBadge = document.getElementById('statusBadge');
+
+    function loadPreset(presetKey) {
+      currentPreset = presetKey;
+      const preset = PRESETS[presetKey];
+      
+      // Build milestones based on preset
+      currentMilestones = {};
+      
+      // For Table Topics, min = green (same time)
+      if (preset.min === preset.green) {
+        currentMilestones.minGreen = { time: preset.min, lineClass: 'green', color: '#28a745' };
+      } else {
+        // For others, min comes before green - show min as BLUE (qualifying line)
+        currentMilestones.min = { time: preset.min, lineClass: 'blue', color: '#0d6efd' };
+        currentMilestones.green = { time: preset.green, lineClass: 'green', color: '#28a745' };
+      }
+      
+      currentMilestones.yellow = { time: preset.yellow, lineClass: 'yellow', color: '#ffc107' };
+      currentMilestones.red = { time: preset.red, lineClass: 'red', color: '#dc3545' };
+      
+      currentMaxTime = preset.grace;
+      
+      return { milestones: currentMilestones, maxTime: currentMaxTime, graceEnd: preset.grace };
+    }
+
+    // Initialize markers with time labels above
+    function initializeMarkers() {
+      const container = document.getElementById('markers2');
+      container.innerHTML = '';
+      
+      const preset = PRESETS[currentPreset];
+
+      Object.entries(currentMilestones).forEach(([key, milestone]) => {
+        const percentage = (milestone.time / currentMaxTime) * 100;
+        const marker = document.createElement('div');
+        marker.className = 'marker';
+        marker.style.left = `${percentage}%`;
+        marker.innerHTML = `
+          <div class="marker-time">${formatTime(milestone.time)}</div>
+          <div class="marker-line ${milestone.lineClass}"></div>
+        `;
+        container.appendChild(marker);
+      });
+    }
+
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function updateDisplay() {
+      const preset = PRESETS[currentPreset];
+      const timeStr = formatTime(currentTime);
+      document.getElementById('timer2').textContent = timeStr;
+
+      // Update progress bar
+      const percentage = Math.min((currentTime / currentMaxTime) * 100, 100);
+      document.getElementById('progress2').style.width = `${percentage}%`;
+
+      // Determine current color and background
+      let currentColor = '#28a745';
+      let bgColor = '#ffffff';
+      let textColor = '#111111';
+      let status = 'Before minimum time';
+      let inGracePeriod = false;
+
+      if (currentTime < preset.min) {
+        currentColor = '#6c757d'; // gray
+        bgColor = '#ffffff';
+        textColor = '#111111';
+        status = 'Before minimum time';
+      } else if (currentTime < preset.yellow) {
+        currentColor = '#28a745';
+        bgColor = '#d4edda';
+        textColor = '#155724';
+        status = 'Green zone - Qualified!';
+      } else if (currentTime < preset.red) {
+        currentColor = '#ffc107';
+        bgColor = '#fff3cd';
+        textColor = '#856404';
+        status = 'Yellow zone - Within time';
+      } else if (currentTime <= preset.grace) {
+        currentColor = '#dc3545';
+        bgColor = '#f8d7da';
+        textColor = '#721c24';
+        if (currentTime > preset.red) {
+          status = 'Grace period - 30 seconds remaining';
+          inGracePeriod = true;
+        } else {
+          status = 'Red zone - Time to wrap up';
+        }
+      } else {
+        currentColor = '#e83e8c';
+        bgColor = '#f8d7da';
+        textColor = '#721c24';
+        status = 'Over time - Disqualified';
+      }
+
+      // Update progress bar
+      const progressBar = document.getElementById('progress2');
+      progressBar.style.background = currentColor;
+      
+      // Add/remove blinking animation for grace period
+      if (inGracePeriod) {
+        progressBar.classList.add('grace-active');
+      } else {
+        progressBar.classList.remove('grace-active');
+      }
+
+      // Update timer display
+      const timer = document.getElementById('timer2');
+      timer.style.setProperty('--timer-bg', bgColor);
+      timer.style.setProperty('--timer-color', textColor);
+
+      // Update status badge
+      statusBadge.textContent = status;
+      statusBadge.style.background = bgColor;
+      statusBadge.style.color = textColor;
+    }
+
+    function startDemo() {
+      if (isRunning) return;
+      
+      isRunning = true;
+      startBtn.textContent = '⏸️ Pause';
+      
+      intervalId = setInterval(() => {
+        currentTime += speed;
+        if (currentTime > currentMaxTime + 10) {
+          currentTime = 0; // Loop back
+        }
+        updateDisplay();
+      }, 1000);
+    }
+
+    function pauseDemo() {
+      isRunning = false;
+      startBtn.textContent = '▶️ Resume';
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    }
+
+    function resetDemo() {
+      pauseDemo();
+      currentTime = 0;
+      updateDisplay();
+      startBtn.textContent = '▶️ Start Demo';
+    }
+
+    function toggleSpeed() {
+      if (speed === 1) {
+        speed = 2;
+        speedBtn.textContent = '⏩ Speed: 2x';
+      } else if (speed === 2) {
+        speed = 4;
+        speedBtn.textContent = '⏩ Speed: 4x';
+      } else {
+        speed = 1;
+        speedBtn.textContent = '⏩ Speed: 1x';
+      }
+    }
+
+    // Event listeners
+    startBtn.addEventListener('click', () => {
+      if (isRunning) {
+        pauseDemo();
+      } else {
+        startDemo();
+      }
+    });
+
+    resetBtn.addEventListener('click', resetDemo);
+    speedBtn.addEventListener('click', toggleSpeed);
+    
+    presetSelect.addEventListener('change', () => {
+      pauseDemo();
+      currentTime = 0;
+      loadPreset(presetSelect.value);
+      initializeMarkers();
+      updateDisplay();
+      startBtn.textContent = '▶️ Start Demo';
+    });
+
+    // Initialize with Table Topics
+    loadPreset('TT');
+    initializeMarkers();
+    updateDisplay();
+  </script>
+</body>
+</html>
+
