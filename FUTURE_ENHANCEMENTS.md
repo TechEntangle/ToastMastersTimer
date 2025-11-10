@@ -155,36 +155,7 @@ Hide during active timing:
 - Restore all elements when timer is paused or ended
 - Ensure mini control bar remains easily accessible
 
-### 4. Click-to-Copy Session ID Badge
-
-**Status:** Pending client approval
-
-**Description:**
-Make the Session ID badge clickable to copy the session ID to clipboard, providing quick access for sharing.
-
-**Current Behavior:**
-Session ID is displayed as a static badge in the header - users must manually select and copy the text
-
-**Proposed Behavior:**
-- Session ID badge remains in header (current location preserved)
-- Clicking the badge copies the session ID to clipboard
-- Show brief "Copied!" tooltip/feedback after successful copy
-- Add subtle hover effect (cursor pointer, slight highlight) to indicate it's clickable
-
-**Benefits:**
-- **Faster Sharing:** One-click copy instead of manual text selection
-- **Better UX:** Reduces friction when sharing session with remote attendees
-- **Visual Feedback:** Users know the action was successful
-- **Maintains Current Layout:** No major interface changes
-
-**Implementation Notes:**
-- Add click event listener to `#sessionIdBadge` element
-- Use `navigator.clipboard.writeText()` for copying
-- Add CSS hover state (cursor: pointer, slight opacity/scale change)
-- Show temporary success message (toast notification or inline text change)
-- Consider adding small copy icon (📋) next to session ID for discoverability
-
-### 5. Replace Emoji Icons with Professional Icon Fonts
+### 4. Replace Emoji Icons with Professional Icon Fonts
 
 **Status:** Pending client approval
 
@@ -223,7 +194,7 @@ Buttons use emoji icons: ▶️ Start, ⟲ Reset, 🛑 End Talk, ⬇️ Download
 **Reference:**
 - [Bootstrap Icons](https://icons.getbootstrap.com/)
 
-### 6. Visual Rating Bars on Leaderboard
+### 5. Visual Rating Bars on Leaderboard
 
 **Status:** Pending client approval (Low Priority)
 
@@ -257,7 +228,7 @@ Leaderboard displays only numeric values: average rating (e.g., "4.5") and vote 
 - Ensure numeric rating remains primary; bar is supplementary
 - Test responsiveness on mobile devices
 
-### 7. Standardized Color Palette Across All Pages
+### 6. Standardized Color Palette Across All Pages
 
 **Status:** Pending client approval (Low Priority)
 
@@ -304,7 +275,7 @@ Define and implement a consistent, minimal color palette across all three pages 
 - Test color contrast ratios for accessibility (WCAG AA: 4.5:1 minimum)
 - Document color usage in README or style guide
 
-### 8. Typography Hierarchy Standardization
+### 7. Typography Hierarchy Standardization
 
 **Status:** Pending client approval
 
@@ -355,7 +326,7 @@ Establish and implement a consistent typography system with clear hierarchy acro
 - Use `clamp()` for responsive typography where appropriate
 - Consider using rem units consistently (based on 16px root)
 
-### 9. Increased White Space and Spacing Consistency
+### 8. Increased White Space and Spacing Consistency
 
 **Status:** Pending client approval
 
@@ -410,7 +381,7 @@ Implement an 8px grid system and increase spacing between major sections for bet
 - Add more margin-bottom between major sections
 - Test on mobile to ensure spacing scales appropriately
 
-### 10. Enhanced Focus States and Accessibility Improvements
+### 9. Enhanced Focus States and Accessibility Improvements
 
 **Status:** Pending client approval (Low Priority)
 
@@ -466,7 +437,7 @@ Improve keyboard navigation and accessibility with custom focus indicators and b
 - [WCAG 2.1 Guidelines](https://www.w3.org/WAI/WCAG21/quickref/)
 - [WebAIM Contrast Checker](https://webaim.org/resources/contrastchecker/)
 
-### 11. Loading States and User Feedback
+### 10. Loading States and User Feedback
 
 **Status:** Pending client approval
 
@@ -524,7 +495,7 @@ Add visual feedback during asynchronous operations (Supabase data fetches, form 
 2. Dashboard data loading on ratings-dashboard.html
 3. Supabase sync operations on timer page
 
-### 12. Quick Timer Mode (Optional Metadata Fields)
+### 11. Quick Timer Mode (Optional Metadata Fields)
 
 **Status:** Pending client approval (Low Priority)
 
@@ -581,5 +552,52 @@ Add a "Quick Timer" mode where speaker name and topic fields are optional, allow
 
 ## Completed Features
 
-_(Add completed enhancements here as they are implemented)_
+### ✅ Visual Progress Bar with Timing Milestones
+
+**Status:** ✅ Completed & Deployed (November 10, 2025)
+
+**Description:**
+Integrated a real-time visual progress bar above the timer display that shows color-coded timing milestones and fills as the speech progresses.
+
+**Implementation Details:**
+- **Slim progress bar** (24px height) positioned above the timer display
+- **Color-coded milestones** shown as vertical lines above the bar:
+  - Blue line: Minimum qualification time
+  - Green line: Green light timing
+  - Yellow line: Yellow light timing
+  - Red line: Red light timing
+- **Time labels** displayed above each milestone marker
+- **Dynamic progress fill** that changes color based on current timing zone:
+  - Gray: Before minimum qualification time
+  - Green: Between min and yellow
+  - Yellow: Between yellow and red
+  - Red: During red light and grace period
+- **Blinking animation** during the 30-second grace period
+- **Responsive to presets:** Markers automatically update when switching between Table Topics, Evaluation, Icebreaker, and Speech presets
+- **Visibility logic:** 
+  - Hidden when timer is idle
+  - Visible when timer is running
+  - Remains visible when paused
+  - Hidden after Reset or End Talk
+
+**Benefits Achieved:**
+- ✅ **Instant Visual Feedback:** Speakers can see their progress at a glance
+- ✅ **Clear Milestone Awareness:** Visual markers show when critical timing thresholds will occur
+- ✅ **Enhanced Presentation:** More professional appearance suitable for projection
+- ✅ **Reduced Time Confusion:** No need to mentally calculate time remaining until next threshold
+- ✅ **Grace Period Clarity:** Blinking bar makes grace period unmistakable
+
+**Technical Notes:**
+- 150+ lines of code added (CSS + HTML + JavaScript)
+- No breaking changes to existing functionality
+- All keyboard shortcuts, audio cues, and Supabase sync preserved
+- Uses same timing logic as background color changes for consistency
+
+**Files Modified:**
+- `Index.html` - Added progress bar styles, HTML structure, and JavaScript functions
+
+**Git Commits:**
+- `feat: Integrate visual progress bar into timer page` (cd93ae3)
+
+---
 

@@ -202,6 +202,21 @@
       margin-bottom: 4px;
     }
 
+    /* Progressive Disclosure: Custom Thresholds */
+    .custom-thresholds-container {
+      overflow: hidden;
+      transition: max-height 0.3s ease-out, opacity 0.3s ease-out, margin 0.3s ease-out;
+      max-height: 500px; /* Large enough to accommodate content */
+      opacity: 1;
+    }
+
+    .custom-thresholds-container.collapsed {
+      max-height: 0;
+      opacity: 0;
+      margin: 0 !important;
+      pointer-events: none;
+    }
+
     #mini-control-bar {
       display: none;
       margin: 1.5rem auto 0;
@@ -498,7 +513,7 @@
       <option value="Custom">Custom/Other</option>
     </select>
           </div>
-          <div class="col-lg-9 col-md-8">
+          <div class="col-lg-9 col-md-8 custom-thresholds-container collapsed" id="customThresholdsContainer">
             <label class="form-label d-block">Custom thresholds (mm:ss)</label>
             <div class="row g-3">
               <div class="col-sm-4">
@@ -614,6 +629,7 @@
     const progressContainer = document.getElementById('progress-container');
     const timerProgressFill = document.getElementById('timer-progress-fill');
     const timerMarkers = document.getElementById('timer-markers');
+    const customThresholdsContainer = document.getElementById('customThresholdsContainer');
 
     const supabaseConfig = window.tmSupabaseConfig || {};
     const supabase = (window.supabase && supabaseConfig.url && supabaseConfig.anonKey)
@@ -730,6 +746,16 @@
 
     function setInputsDisabled(state) {
       numericInputs.forEach((input) => { if (input) input.disabled = state; });
+    }
+
+    function setCustomThresholdsVisible(shouldShow) {
+      if (!customThresholdsContainer) return;
+      
+      if (shouldShow) {
+        customThresholdsContainer.classList.remove('collapsed');
+      } else {
+        customThresholdsContainer.classList.add('collapsed');
+      }
     }
 
         const displayBar = document.getElementById('display-bar');
@@ -934,9 +960,11 @@
       if (presetSelect.value !== 'Custom') {
         applyPreset(presetSelect.value);
         setInputsDisabled(true);
+        setCustomThresholdsVisible(false);
       } else {
         currentMinTime = 0; // Reset minimum time for custom preset
         setInputsDisabled(false);
+        setCustomThresholdsVisible(true);
       }
     });
 
@@ -1310,6 +1338,13 @@
     // Initialize progress bar markers on page load
     buildTimerMilestones('TT'); // Default to Table Topics
     initializeTimerMarkers();
+    
+    // Initialize custom thresholds visibility based on current preset
+    if (presetSelect.value === 'Custom') {
+      setCustomThresholdsVisible(true);
+    } else {
+      setCustomThresholdsVisible(false);
+    }
   </script>
 
     <footer class="py-3 text-center text-muted small">
