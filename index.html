@@ -391,9 +391,9 @@
         <div class="meta-lock-indicator">
           <span>🔒</span>
           <span>Fields locked during session — Reset or End Talk to edit</span>
-        </div>
-      </div>
     </div>
+  </div>
+  </div>
 
     <div class="card shadow-sm mb-4 controls">
       <div class="card-body">
@@ -401,11 +401,12 @@
           <div class="col-lg-3 col-md-4">
             <label for="preset" class="form-label">Timing preset</label>
             <select id="preset" class="form-select">
-              <option value="TT">Table Topics (1–2 min)</option>
-              <option value="EV">Evaluation (2–3 min)</option>
-              <option value="SP">Speech (5–7 min)</option>
-              <option value="Custom">Custom/Other</option>
-            </select>
+      <option value="TT">Table Topics (1–2 min)</option>
+      <option value="EV">Evaluation (2–3 min)</option>
+              <option value="IB">Icebreaker (4–6 min)</option>
+      <option value="SP">Speech (5–7 min)</option>
+      <option value="Custom">Custom/Other</option>
+    </select>
           </div>
           <div class="col-lg-9 col-md-8">
             <label class="form-label d-block">Custom thresholds (mm:ss)</label>
@@ -432,11 +433,11 @@
                   <input id="red-min" type="number" min="0" value="2" class="form-control text-end" />
                   <span class="separator">:</span>
                   <input id="red-sec" type="number" min="0" max="59" value="0" class="form-control text-end" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+    </div>
+    </div>
+    </div>
+    </div>
+  </div>
 
         <div class="d-flex flex-wrap gap-3 justify-content-center mt-4 pt-3 border-top">
           <button id="startPauseBtn" type="button" class="btn btn-success px-4">
@@ -472,21 +473,21 @@
         <h2 class="h4 text-center mb-3">Timer Log</h2>
         <div class="table-responsive">
           <table id="logTable" class="table align-middle">
-            <thead>
-              <tr>
+        <thead>
+          <tr>
                 <th>Name</th>
                 <th>Topic</th>
                 <th>Total Time</th>
                 <th>Time Status</th>
-              </tr>
-            </thead>
-            <tbody id="logBody"></tbody>
-          </table>
-        </div>
-      </div>
+          </tr>
+        </thead>
+        <tbody id="logBody"></tbody>
+      </table>
+    </div>
+  </div>
     </section>
   </div>
-<script>
+  <script>
 
     const timerDisplay = document.getElementById('timer-display');
     const presetSelect = document.getElementById('preset');
@@ -554,6 +555,7 @@
     let ratingsSessionId = null;
     let lastCue = 'none';
     let lastGraceState = null;
+    let currentMinTime = 60; // Minimum qualification time for current preset (default: Table Topics)
 
     function playCue() {
       if (!cueAudioTemplate) return;
@@ -571,14 +573,16 @@
     let isRunning = false;
 
     const presets = {
-      TT: { green: 60, yellow: 90, red: 120 },
-      EV: { green: 120, yellow: 150, red: 180 },
-      SP: { green: 300, yellow: 360, red: 420 }
+      TT: { min: 60,  green: 60,  yellow: 90,  red: 120 },  // Table Topics: 1:00-2:30 (min = green)
+      EV: { min: 90,  green: 120, yellow: 150, red: 180 },  // Evaluation: 1:30-3:30 (min 30s before green)
+      IB: { min: 210, green: 240, yellow: 300, red: 360 },  // Icebreaker: 3:30-6:30 (min 30s before green)
+      SP: { min: 270, green: 300, yellow: 360, red: 420 }   // Speech: 4:30-7:30 (min 30s before green)
     };
 
     function applyPreset(key) {
       const preset = presets[key];
       if (!preset) return;
+      currentMinTime = preset.min || 0; // Store minimum qualification time
       greenMinInput.value = Math.floor(preset.green / 60);
       greenSecInput.value = preset.green % 60;
       yellowMinInput.value = Math.floor(preset.yellow / 60);
@@ -794,6 +798,7 @@
         applyPreset(presetSelect.value);
         setInputsDisabled(true);
       } else {
+        currentMinTime = 0; // Reset minimum time for custom preset
         setInputsDisabled(false);
       }
     });
@@ -872,7 +877,7 @@
         if (cue === 'red') {
           playDoubleCue();
         } else {
-          playCue();
+        playCue();
         }
       }
 
@@ -889,18 +894,24 @@
       const t = thresholds();
       const red = t.red;
       const graceLimit = red > 0 ? red + GRACE_SECONDS : null;
+      const minQualTime = currentMinTime; // Use preset's minimum qualification time
 
-      if (totalSeconds < t.green) {
+      // Check if under minimum qualification time
+      if (minQualTime > 0 && totalSeconds < minQualTime) {
         return { label: 'Under Time', className: 'status-under', icon: '⏱️' };
       }
 
+      // Check if over red time
       if (red > 0 && totalSeconds > red) {
+        // Within grace period = still "Within Time"
         if (graceLimit !== null && totalSeconds <= graceLimit) {
           return { label: 'Within Time', className: 'status-within', icon: '👍' };
         }
+        // Beyond grace period = "Over Time"
         return { label: 'Over Time', className: 'status-over', icon: '👎' };
       }
 
+      // Between minimum and red = "Within Time"
       return { label: 'Within Time', className: 'status-within', icon: '👍' };
     }
 
@@ -1018,7 +1029,7 @@
       await persistRatingsSnapshot();
 
       if (timerInterval) {
-        clearInterval(timerInterval);
+      clearInterval(timerInterval);
         timerInterval = null;
       }
       isRunning = false;
@@ -1063,13 +1074,13 @@
     });
 
     document.addEventListener('keydown', (event) => {
-      const tag = document.activeElement?.tagName;
+        const tag = document.activeElement?.tagName;
       const isFormField = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
 
       if (event.code === 'Space' && !isFormField) {
         event.preventDefault();
-        toggleStartPause();
-      }
+          toggleStartPause();
+        }
 
       if (event.code === 'KeyB' && !event.repeat && !isFormField) {
         event.preventDefault();
