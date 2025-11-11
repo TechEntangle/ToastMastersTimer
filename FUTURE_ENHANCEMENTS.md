@@ -68,32 +68,7 @@ const presets = {
 
 ## UI/UX Improvements (First Principles Design)
 
-### 1. Progressive Disclosure for Custom Thresholds
-
-**Status:** Pending client approval
-
-**Description:**
-Hide custom threshold time inputs by default and only show them when "Custom/Other" preset is selected from the dropdown.
-
-**Current Behavior:**
-All 6 time input fields (green/yellow/red min:sec) are always visible regardless of which preset is selected.
-
-**Proposed Behavior:**
-- When "Table Topics", "Evaluation", or "Speech" preset is selected: Hide the custom threshold inputs
-- When "Custom/Other" is selected: Show the 3 rows of time inputs
-- Use smooth CSS transition for show/hide animation
-
-**Benefits:**
-- **Reduced Cognitive Load:** Users see only relevant controls for their selection
-- **Cleaner Interface:** Removes 3 rows of inputs (6 input fields + labels) from view when using presets
-- **Better Focus:** 90% of users use presets; they don't need to see unused custom fields
-
-**Implementation Notes:**
-- Add CSS class `.custom-thresholds` with `display: none` by default
-- Toggle class via JavaScript when preset dropdown changes
-- Preserve entered custom values even when hidden (don't clear on hide)
-
-### 2. Consolidate Control Buttons
+### 1. Consolidate Control Buttons
 
 **Status:** Pending client approval
 
@@ -120,7 +95,7 @@ Group control buttons by frequency of use to reduce visual clutter and improve f
 - Keep dropdown items with icons and labels for clarity
 - Ensure keyboard accessibility (tab navigation, enter to open)
 
-### 3. Enhanced Presentation Mode During Active Timing
+### 2. Enhanced Presentation Mode During Active Timing
 
 **Status:** Pending client approval
 
@@ -155,7 +130,7 @@ Hide during active timing:
 - Restore all elements when timer is paused or ended
 - Ensure mini control bar remains easily accessible
 
-### 4. Replace Emoji Icons with Professional Icon Fonts
+### 3. Replace Emoji Icons with Professional Icon Fonts
 
 **Status:** Pending client approval
 
@@ -194,7 +169,7 @@ Buttons use emoji icons: ▶️ Start, ⟲ Reset, 🛑 End Talk, ⬇️ Download
 **Reference:**
 - [Bootstrap Icons](https://icons.getbootstrap.com/)
 
-### 5. Visual Rating Bars on Leaderboard
+### 4. Visual Rating Bars on Leaderboard
 
 **Status:** Pending client approval (Low Priority)
 
@@ -228,7 +203,7 @@ Leaderboard displays only numeric values: average rating (e.g., "4.5") and vote 
 - Ensure numeric rating remains primary; bar is supplementary
 - Test responsiveness on mobile devices
 
-### 6. Standardized Color Palette Across All Pages
+### 5. Standardized Color Palette Across All Pages
 
 **Status:** Pending client approval (Low Priority)
 
@@ -275,7 +250,7 @@ Define and implement a consistent, minimal color palette across all three pages 
 - Test color contrast ratios for accessibility (WCAG AA: 4.5:1 minimum)
 - Document color usage in README or style guide
 
-### 7. Typography Hierarchy Standardization
+### 6. Typography Hierarchy Standardization
 
 **Status:** Pending client approval
 
@@ -326,7 +301,7 @@ Establish and implement a consistent typography system with clear hierarchy acro
 - Use `clamp()` for responsive typography where appropriate
 - Consider using rem units consistently (based on 16px root)
 
-### 8. Increased White Space and Spacing Consistency
+### 7. Increased White Space and Spacing Consistency
 
 **Status:** Pending client approval
 
@@ -381,7 +356,7 @@ Implement an 8px grid system and increase spacing between major sections for bet
 - Add more margin-bottom between major sections
 - Test on mobile to ensure spacing scales appropriately
 
-### 9. Enhanced Focus States and Accessibility Improvements
+### 8. Enhanced Focus States and Accessibility Improvements
 
 **Status:** Pending client approval (Low Priority)
 
@@ -437,7 +412,7 @@ Improve keyboard navigation and accessibility with custom focus indicators and b
 - [WCAG 2.1 Guidelines](https://www.w3.org/WAI/WCAG21/quickref/)
 - [WebAIM Contrast Checker](https://webaim.org/resources/contrastchecker/)
 
-### 10. Loading States and User Feedback
+### 9. Loading States and User Feedback
 
 **Status:** Pending client approval
 
@@ -495,7 +470,7 @@ Add visual feedback during asynchronous operations (Supabase data fetches, form 
 2. Dashboard data loading on ratings-dashboard.html
 3. Supabase sync operations on timer page
 
-### 11. Quick Timer Mode (Optional Metadata Fields)
+### 10. Quick Timer Mode (Optional Metadata Fields)
 
 **Status:** Pending client approval (Low Priority)
 
@@ -551,6 +526,46 @@ Add a "Quick Timer" mode where speaker name and topic fields are optional, allow
 ---
 
 ## Completed Features
+
+### ✅ Progressive Disclosure for Custom Thresholds
+
+**Status:** ✅ Completed & Deployed (November 11, 2025)
+
+**Description:**
+Hide custom threshold time inputs by default and only show them when "Custom/Other" preset is selected from the dropdown.
+
+**Implementation Details:**
+- Custom threshold inputs hidden by default when using standard presets (TT/EV/IB/SP)
+- Smooth 300ms CSS transition animation when expanding/collapsing
+- Section only visible when "Custom/Other" preset is selected
+- Custom values preserved in DOM even when hidden
+- No breaking changes to existing functionality
+
+**CSS Changes:**
+- `.custom-thresholds-container` class with transition on max-height, opacity, margin
+- `.collapsed` state: max-height: 0, opacity: 0, pointer-events: none
+- Smooth ease-out animation creates professional feel
+
+**JavaScript Changes:**
+- `customThresholdsContainer` DOM reference variable added
+- `setCustomThresholdsVisible(shouldShow)` function to toggle collapsed class
+- Integration with preset change handler (hide on preset, show on Custom)
+- Initialization on page load sets correct state based on default preset
+
+**Benefits Achieved:**
+- ✅ **90% Cleaner Interface:** Users with standard presets see 3 fewer rows (6 input fields + labels)
+- ✅ **Reduced Cognitive Load:** Only relevant controls visible for selection
+- ✅ **Better Focus:** Emphasizes timing preset dropdown as primary control
+- ✅ **Professional Polish:** Smooth animation adds UX refinement
+- ✅ **Value Preservation:** Custom values retained when switching between presets
+
+**Files Modified:**
+- `Index.html` - Added CSS styles, HTML structure changes, JavaScript functions
+
+**Git Commits:**
+- `feat: Add progressive disclosure for custom thresholds` (c54ef0c)
+
+---
 
 ### ✅ Visual Progress Bar with Timing Milestones
 
